@@ -24,6 +24,10 @@
   /* sidebar width */
   --sidebar-w: 275px;
   --feed-max:  600px;
+
+  /* aliases for legacy Admin page */
+  --bg-page:    #000000;
+  --border-soft: oklch(0.22 0.010 250);
 }
 
 * { box-sizing: border-box; }

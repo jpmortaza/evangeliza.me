@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { supabase } from '@/lib/supabase'
 import { type Testemunho, CATEGORIAS } from '@/types'
 import { formatarDataRelativa, getDisplayId } from '@/lib/utils'
+import SectionHeader from '@/components/layout/Header'
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)' }
 
@@ -237,30 +238,22 @@ export default function Admin() {
     <>
       <Helmet><title>Admin — evangeliza.me</title></Helmet>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: 'clamp(20px,4vw,40px) clamp(16px,4vw,48px) 80px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap' as const, gap: 12, marginBottom: 24 }}>
-          <div>
-            <p style={{ ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: 'var(--accent)', marginBottom: 8 }}>PAINEL · /admin</p>
-            <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(26px,4vw,38px)', fontWeight: 500, letterSpacing: -1.5, margin: 0, color: 'var(--text)' }}>
-              Moderação
-            </h1>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.4 }}>
-              {sessao.email}
-            </span>
-            <button
-              onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.5, transition: 'color 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-mute)')}
-            >
-              SAIR
-            </button>
-          </div>
-        </div>
+      <SectionHeader
+        title="Moderação"
+        subtitle={sessao.email}
+        action={
+          <button
+            onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-mute)', letterSpacing: 0.5, transition: 'color 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-mute)')}
+          >
+            SAIR
+          </button>
+        }
+      />
 
+      <div style={{ padding: '16px 16px 80px' }}>
         {/* Stats grid — gap:1 trick creates border lines */}
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
