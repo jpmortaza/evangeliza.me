@@ -6,7 +6,7 @@ interface Props {
   url: string
 }
 
-const MONO: React.CSSProperties = { fontFamily: '"Geist Mono", monospace' }
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)' }
 
 export default function BotoesCompartilhar({ titulo, conteudo, url }: Props) {
   const [copiado, setCopiado] = useState(false)
@@ -32,19 +32,31 @@ export default function BotoesCompartilhar({ titulo, conteudo, url }: Props) {
     }
   }
 
+  const btnBase: React.CSSProperties = {
+    ...MONO, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase',
+    padding: '5px 9px', background: 'transparent', cursor: 'pointer',
+    transition: 'border-color 0.15s, color 0.15s',
+  }
+
   return (
-    <div className="flex items-center gap-2">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <button
         onClick={compartilharWhatsApp}
-        className="text-[10px] tracking-widest border px-2 py-1 transition-colors hover:border-[#e8b84b] hover:text-[#e8b84b]"
-        style={{ ...MONO, color: '#555', borderColor: '#2a2a2a' }}
+        style={{ ...btnBase, border: '1px solid var(--border)', color: 'var(--text-mute)' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-mute)' }}
       >
         WPP
       </button>
       <button
         onClick={copiarLink}
-        className="text-[10px] tracking-widest border px-2 py-1 transition-colors hover:border-[#e8b84b] hover:text-[#e8b84b]"
-        style={{ ...MONO, color: copiado ? '#e8b84b' : '#555', borderColor: copiado ? '#e8b84b' : '#2a2a2a' }}
+        style={{
+          ...btnBase,
+          border: `1px solid ${copiado ? 'var(--accent)' : 'var(--border)'}`,
+          color: copiado ? 'var(--accent)' : 'var(--text-mute)',
+        }}
+        onMouseEnter={e => { if (!copiado) { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' } }}
+        onMouseLeave={e => { if (!copiado) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-mute)' } }}
       >
         {copiado ? 'COPIADO' : 'LINK'}
       </button>

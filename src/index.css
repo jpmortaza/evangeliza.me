@@ -1,73 +1,98 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #0a0a0a;
-  --color-surface: #141414;
-  --color-elevated: #1e1e1e;
-  --color-gold: #e8b84b;
-  --color-gold-dim: #a07c28;
-  --color-line: #2a2a2a;
-  --color-muted: #888888;
-  --color-dim: #444444;
-  --color-faint: #2a2a2a;
   --font-sans: "Geist", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Courier New", monospace;
 }
 
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  --bg-page:          oklch(0.115 0.012 250);
+  --bg:               oklch(0.135 0.012 250);
+  --bg-elev:          oklch(0.175 0.013 250);
+  --border:           oklch(0.27  0.012 250);
+  --border-soft:      oklch(0.22  0.011 250);
+  --text:             oklch(0.965 0.005  80);
+  --text-dim:         oklch(0.70  0.010 250);
+  --text-mute:        oklch(0.48  0.011 250);
+  --accent:           oklch(0.86  0.10   85);
+  --accent-dim:       oklch(0.55  0.08   85);
+  --accent-glow:      oklch(0.86  0.10   85 / 0.10);
+  --accent-glow-strong: oklch(0.86 0.10  85 / 0.45);
+  --font-sans:        "Geist", system-ui, sans-serif;
+  --font-mono:        "Geist Mono", "Courier New", monospace;
+}
+
 * { box-sizing: border-box; }
 
-html { background: #0a0a0a; }
+html { background: var(--bg-page); }
 
 body {
-  font-family: "Geist", system-ui, sans-serif;
-  background-color: #0a0a0a;
-  color: #ffffff;
+  font-family: var(--font-sans);
+  background-color: var(--bg-page);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
 }
 
-::selection {
-  background: #e8b84b;
-  color: #0a0a0a;
+/* Grid overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(to right,  oklch(0.20 0.012 250 / 0.30) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.20 0.012 250 / 0.30) 1px, transparent 1px);
+  background-size: 80px 80px;
+  pointer-events: none;
+  z-index: 0;
 }
+
+/* All direct content sits above the grid */
+#root { position: relative; z-index: 1; }
+
+::selection { background: var(--accent); color: var(--bg-page); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #0a0a0a; }
-::-webkit-scrollbar-thumb { background: #2a2a2a; }
+::-webkit-scrollbar-track { background: var(--bg-page); }
+::-webkit-scrollbar-thumb { background: var(--border); }
 
-/* Input reset */
+/* Form inputs */
 input, textarea, select {
   background: transparent;
-  color: #fff;
-  font-family: "Geist", system-ui, sans-serif;
+  color: var(--text);
+  font-family: var(--font-sans);
 }
 
-input::placeholder, textarea::placeholder {
-  color: #444;
-}
+input::placeholder, textarea::placeholder { color: var(--text-mute); }
+input:focus, textarea:focus { outline: none; border-color: var(--accent) !important; }
 
-input:focus, textarea:focus {
-  outline: none;
-  border-color: #e8b84b !important;
+/* ev-input — matches prototype */
+.ev-input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  transition: border-color 0.15s;
+  border-radius: 0;
 }
+.ev-input:focus { border-color: var(--accent); outline: none; }
+.ev-input::placeholder { color: var(--text-mute); }
+.ev-input-title { font-size: 16px; font-weight: 500; }
+.ev-textarea { resize: vertical; }
 
-/* Mono label utility */
-.label {
-  font-family: "Geist Mono", monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #555;
-}
+/* ev-card hover */
+.ev-card { transition: background 160ms; }
+.ev-card:hover { background: var(--bg-elev); }
 
-.label-gold {
-  font-family: "Geist Mono", monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #e8b84b;
-}
+/* ev-amen / ev-share button hover */
+.ev-amen:hover  { border-color: var(--accent) !important; color: var(--accent) !important; }
+.ev-share:hover { background: var(--accent-glow) !important; }
 
 /* Line clamp */
 .line-clamp-3 {
@@ -77,24 +102,39 @@ input:focus, textarea:focus {
   overflow: hidden;
 }
 
-.line-clamp-4 {
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Animate pulse override for dark theme */
+/* Animations */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  50%       { opacity: 0.3; }
 }
-
 .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-/* Dot blink */
-@keyframes blink {
+@keyframes ev-blink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.2; }
+  50%       { opacity: 0.15; }
 }
-.dot-live { animation: blink 2s ease-in-out infinite; }
+.dot-live { animation: ev-blink 2s ease-in-out infinite; }
+
+/* Pulsing dot (status badge) */
+@keyframes ev-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 var(--accent-glow-strong); }
+  70%  { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.ev-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow-strong);
+  animation: ev-pulse-ring 2.4s ease-out infinite;
+  vertical-align: middle;
+}
+
+/* Rotating word fade-in */
+@keyframes ev-rotate-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ev-rotate-in { animation: ev-rotate-in 0.35s ease forwards; }

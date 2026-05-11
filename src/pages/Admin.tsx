@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { type Testemunho, CATEGORIAS } from '@/types'
 import { formatarDataRelativa, getDisplayId } from '@/lib/utils'
 
-const MONO: React.CSSProperties = { fontFamily: '"Geist Mono", monospace' }
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)' }
 
 type Aba = 'pendentes' | 'aprovados' | 'denunciados'
 
@@ -38,28 +38,25 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
     setLoading(false)
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', background: 'transparent', border: '1px solid #2a2a2a',
-    color: '#fff', padding: '12px 14px', fontSize: '14px', fontFamily: '"Geist", sans-serif',
+  const inp: React.CSSProperties = {
+    width: '100%', background: 'transparent', border: '1px solid var(--border)',
+    color: 'var(--text)', padding: '12px 14px', fontSize: 14, fontFamily: 'var(--font-sans)',
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#0a0a0a' }}>
-      <div className="w-full max-w-sm border p-8" style={{ borderColor: '#2a2a2a' }}>
-        <div className="mb-8">
-          <p className="text-[10px] tracking-widest mb-3" style={{ ...MONO, color: '#555' }}>PAINEL · /ADMIN</p>
-          <h1 className="text-2xl font-bold text-white">Zeladores</h1>
-          <p className="text-sm mt-1" style={{ color: '#555' }}>Acesso restrito</p>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
+      <div style={{ width: '100%', maxWidth: 360, border: '1px solid var(--border)', padding: 32 }}>
+        <div style={{ marginBottom: 32 }}>
+          <p style={{ ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: 'var(--text-mute)', marginBottom: 12 }}>PAINEL · /ADMIN</p>
+          <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 24, fontWeight: 500, color: 'var(--text)', margin: 0 }}>Zeladores</h1>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-mute)', marginTop: 4 }}>Acesso restrito</p>
         </div>
-        <form onSubmit={entrar} className="space-y-3">
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-            placeholder="email" style={inputStyle} required />
-          <input type="password" value={senha} onChange={e => setSenha(e.target.value)}
-            placeholder="senha" style={inputStyle} required />
-          {erro && <p className="text-[11px]" style={{ ...MONO, color: '#ef4444' }}>{erro}</p>}
+        <form onSubmit={entrar} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email" style={inp} required />
+          <input type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="senha" style={inp} required />
+          {erro && <p style={{ ...MONO, fontSize: 11, color: '#ef4444' }}>{erro}</p>}
           <button type="submit" disabled={loading}
-            className="w-full py-3 text-sm font-bold tracking-widest disabled:opacity-40"
-            style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}>
+            style={{ padding: '12px 0', ...MONO, fontSize: 11, fontWeight: 700, letterSpacing: 0.6, background: 'var(--accent)', color: 'var(--bg-page)', border: 'none', cursor: 'pointer', opacity: loading ? 0.4 : 1 }}>
             {loading ? 'ENTRANDO…' : '+ ENTRAR'}
           </button>
         </form>
@@ -77,91 +74,86 @@ function ItemTestemunho({ t, onAprovar, onRejeitar }: {
   const [rejMode, setRejMode] = useState(false)
   const [motivo, setMotivo] = useState('')
   const displayId = getDisplayId(t.criado_em, t.id)
-  const autor = t.eh_anonimo ? 'ANÔNIMO' : (t.nome_anonimo ?? 'ANÔNIMO').toUpperCase()
+  const autor = t.eh_anonimo ? 'Anônimo' : (t.nome_anonimo ?? 'Anônimo')
   const cat = t.categoria ? CATEGORIAS[t.categoria].toUpperCase() : null
   const tempo = formatarDataRelativa(t.criado_em).toUpperCase()
 
   return (
-    <article className="border-t py-5" style={{ borderColor: '#2a2a2a' }}>
-      {/* Meta */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <span className="text-[11px]" style={{ ...MONO, color: '#e8b84b' }}>{displayId}</span>
-        {cat && (
-          <>
-            <span style={{ color: '#333' }}>·</span>
-            <span className="text-[10px] px-1.5 py-px border" style={{ ...MONO, color: '#888', borderColor: '#2a2a2a' }}>
+    <div style={{
+      display: 'grid', gap: 16, gridTemplateColumns: '1fr auto',
+      padding: '24px 0', borderBottom: '1px solid var(--border-soft)',
+    }}>
+      <div>
+        {/* Meta */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' as const }}>
+          <span style={{ ...MONO, fontSize: 11, letterSpacing: 0.4, color: 'var(--accent)' }}>{displayId}</span>
+          {cat && (
+            <span style={{ ...MONO, fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase' as const, padding: '2px 6px', border: '1px solid var(--border)', color: 'var(--text-dim)' }}>
               {cat}
             </span>
-          </>
-        )}
-        <span style={{ color: '#333' }}>·</span>
-        <span className="text-[10px]" style={{ ...MONO, color: '#444' }}>{tempo}</span>
+          )}
+          <span style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{tempo}</span>
+        </div>
+
+        <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 500, letterSpacing: -0.4, lineHeight: 1.2, margin: '0 0 8px', color: 'var(--text)' }}>
+          {t.titulo}
+        </h3>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: 1.55, color: 'var(--text-dim)', margin: '0 0 10px', maxWidth: 640 }}>
+          {t.conteudo}
+        </p>
+        <span style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.4, textTransform: 'uppercase' as const }}>
+          {autor.toUpperCase()}
+        </span>
       </div>
 
-      {/* Title */}
-      <h3 className="text-xl font-bold text-white mb-2">{t.titulo}</h3>
-
-      {/* Content */}
-      <p className="text-sm leading-relaxed mb-3 whitespace-pre-line" style={{ color: '#888' }}>
-        {t.conteudo}
-      </p>
-
-      {/* Author */}
-      <p className="text-[10px] mb-4" style={{ ...MONO, color: '#444' }}>{autor}</p>
-
       {/* Actions */}
-      {!rejMode ? (
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onAprovar}
-            className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-bold tracking-widest transition-opacity hover:opacity-80"
-            style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}
-          >
-            + APROVAR
-          </button>
-          <button
-            onClick={() => setRejMode(true)}
-            className="px-4 py-2 text-[11px] border tracking-widest transition-colors hover:border-[#555]"
-            style={{ ...MONO, color: '#888', borderColor: '#2a2a2a' }}
-          >
-            REJEITAR
-          </button>
-          <button
-            className="text-[10px] tracking-widest transition-colors hover:text-white"
-            style={{ ...MONO, color: '#333' }}
-          >
-            MARCAR P/ REVISÃO
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <textarea
-            value={motivo}
-            onChange={e => setMotivo(e.target.value)}
-            placeholder="Motivo da rejeição (opcional)"
-            rows={2}
-            className="w-full px-3 py-2 text-sm border"
-            style={{ background: 'transparent', borderColor: '#2a2a2a', color: '#fff', fontFamily: '"Geist", sans-serif' }}
-          />
-          <div className="flex gap-2">
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6, alignItems: 'flex-end', justifyContent: 'center' }}>
+        {!rejMode ? (
+          <>
             <button
-              onClick={() => onRejeitar(motivo)}
-              className="px-4 py-2 text-[11px] font-bold"
-              style={{ ...MONO, backgroundColor: '#ef4444', color: '#fff' }}
+              onClick={onAprovar}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'var(--accent)', color: 'var(--bg-page)', border: 'none', cursor: 'pointer', ...MONO, fontSize: 11, fontWeight: 700, letterSpacing: 0.5 }}
             >
-              CONFIRMAR REJEIÇÃO
+              <svg width="9" height="9" viewBox="0 0 9 9"><rect x="3.8" y="0" width="1.4" height="9" fill="currentColor" /><rect x="0" y="3.8" width="9" height="1.4" fill="currentColor" /></svg>
+              Aprovar
             </button>
             <button
-              onClick={() => { setRejMode(false); setMotivo('') }}
-              className="px-4 py-2 text-[11px]"
-              style={{ ...MONO, color: '#555' }}
+              onClick={() => setRejMode(true)}
+              style={{ padding: '7px 12px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-mute)', cursor: 'pointer', ...MONO, fontSize: 11, letterSpacing: 0.5 }}
             >
-              CANCELAR
+              Rejeitar
             </button>
+            <button style={{ padding: '4px 6px', background: 'transparent', border: 'none', color: 'var(--text-mute)', cursor: 'pointer', ...MONO, fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>
+              Marcar p/ revisão
+            </button>
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6, width: 200 }}>
+            <textarea
+              value={motivo}
+              onChange={e => setMotivo(e.target.value)}
+              placeholder="Motivo (opcional)"
+              rows={2}
+              style={{ width: '100%', padding: '8px 10px', fontSize: 13, background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-sans)', resize: 'none' as const }}
+            />
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={() => onRejeitar(motivo)}
+                style={{ flex: 1, padding: '7px 10px', background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', ...MONO, fontSize: 11, fontWeight: 700 }}
+              >
+                CONFIRMAR
+              </button>
+              <button
+                onClick={() => { setRejMode(false); setMotivo('') }}
+                style={{ padding: '7px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-mute)', cursor: 'pointer', ...MONO, fontSize: 11 }}
+              >
+                CANCELAR
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </article>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -211,8 +203,8 @@ export default function Admin() {
 
   if (verificando) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
-        <p className="text-[11px] tracking-widest" style={{ ...MONO, color: '#333' }}>VERIFICANDO ACESSO…</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ ...MONO, fontSize: 11, color: 'var(--text-mute)', letterSpacing: 0.6, textTransform: 'uppercase' as const }}>VERIFICANDO ACESSO…</p>
       </div>
     )
   }
@@ -221,13 +213,12 @@ export default function Admin() {
 
   if (ehZelador === false) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4" style={{ backgroundColor: '#0a0a0a' }}>
-        <span className="text-4xl mb-4" style={{ color: '#333' }}>+</span>
-        <p className="text-[10px] tracking-widest mb-3" style={{ ...MONO, color: '#555' }}>ACESSO NEGADO</p>
-        <p className="text-sm mb-6" style={{ color: '#555' }}>{sessao.email}</p>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 16px' }}>
+        <p style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.6, marginBottom: 8 }}>ACESSO NEGADO</p>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)', marginBottom: 24 }}>{sessao.email}</p>
         <button
           onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-          className="text-[11px] tracking-widest" style={{ ...MONO, color: '#444' }}
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', ...MONO, fontSize: 11, color: 'var(--text-mute)', letterSpacing: 0.5 }}
         >
           SAIR
         </button>
@@ -235,83 +226,100 @@ export default function Admin() {
     )
   }
 
+  const stats = [
+    { label: 'Fila',            value: aba === 'pendentes' ? String(itens.length) : '—', accent: aba === 'pendentes' && itens.length > 0 },
+    { label: 'Aprovados hoje',  value: '—', accent: false },
+    { label: 'Rejeitados hoje', value: '—', accent: false },
+    { label: 'Tempo médio',     value: '—', accent: false },
+  ]
+
   return (
     <>
       <Helmet><title>Admin — evangeliza.me</title></Helmet>
 
-      <div className="max-w-3xl mx-auto px-4 py-10">
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: 'clamp(20px,4vw,40px) clamp(16px,4vw,48px) 80px' }}>
         {/* Header */}
-        <div className="mb-8">
-          <p className="text-[10px] tracking-widest mb-3" style={{ ...MONO, color: '#555' }}>PAINEL · /ADMIN</p>
-          <div className="flex items-start justify-between flex-wrap gap-3">
-            <h1 className="text-4xl font-bold text-white">Moderação</h1>
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] tracking-widest" style={{ ...MONO, color: '#555' }}>
-                LOGADO COMO · {sessao.email.toUpperCase()}
-              </span>
-              <button
-                onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-                className="text-[10px] tracking-widest transition-colors hover:text-white"
-                style={{ ...MONO, color: '#333' }}
-              >
-                SAIR
-              </button>
-            </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap' as const, gap: 12, marginBottom: 24 }}>
+          <div>
+            <p style={{ ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: 'var(--accent)', marginBottom: 8 }}>PAINEL · /admin</p>
+            <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(26px,4vw,38px)', fontWeight: 500, letterSpacing: -1.5, margin: 0, color: 'var(--text)' }}>
+              Moderação
+            </h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.4 }}>
+              {sessao.email}
+            </span>
+            <button
+              onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.5, transition: 'color 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-mute)')}
+            >
+              SAIR
+            </button>
           </div>
         </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 border mb-8" style={{ borderColor: '#2a2a2a' }}>
-          {[
-            { label: 'FILA', value: aba === 'pendentes' ? String(itens.length) : '—' },
-            { label: 'APROVADOS HOJE', value: '—' },
-            { label: 'REJEITADOS HOJE', value: '—' },
-            { label: 'TEMPO MÉDIO', value: '—' },
-          ].map(({ label, value }) => (
-            <div
-              key={label}
-              className="p-4 border-r border-b sm:border-b-0 last:border-r-0"
-              style={{ borderColor: '#2a2a2a' }}
-            >
-              <p className="text-[10px] mb-2 tracking-widest" style={{ ...MONO, color: '#444' }}>{label}</p>
-              <p className="text-3xl sm:text-4xl font-bold text-white">{value}</p>
+        {/* Stats grid — gap:1 trick creates border lines */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 1, background: 'var(--border-soft)',
+          border: '1px solid var(--border-soft)', marginBottom: 24,
+        }}>
+          {stats.map(s => (
+            <div key={s.label} style={{ background: 'var(--bg)', padding: '18px 20px' }}>
+              <p style={{ ...MONO, fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase' as const, color: 'var(--text-mute)', marginBottom: 6 }}>{s.label}</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 30, fontWeight: 500, color: s.accent ? 'var(--accent)' : 'var(--text)', letterSpacing: -0.5, fontVariantNumeric: 'tabular-nums' }}>
+                {s.value}
+              </p>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b mb-6" style={{ borderColor: '#2a2a2a' }}>
-          {(['pendentes', 'aprovados', 'denunciados'] as Aba[]).map(a => (
-            <button
-              key={a}
-              onClick={() => setAba(a)}
-              className="px-4 py-3 text-[11px] tracking-widest border-b-2 transition-colors"
-              style={{
-                ...MONO,
-                color: aba === a ? '#fff' : '#444',
-                borderBottomColor: aba === a ? '#e8b84b' : 'transparent',
-              }}
-            >
-              {a.toUpperCase()}
-              {a === 'pendentes' && aba === 'pendentes' && itens.length > 0 && (
-                <span className="ml-2" style={{ color: '#e8b84b' }}>· {itens.length}</span>
-              )}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-soft)', marginBottom: 0 }}>
+          {([
+            { k: 'pendentes' as Aba, label: `Pendentes${aba === 'pendentes' && itens.length > 0 ? ` · ${itens.length}` : ''}` },
+            { k: 'aprovados' as Aba, label: 'Aprovados' },
+            { k: 'denunciados' as Aba, label: 'Denunciados · 0' },
+          ]).map(({ k, label }) => {
+            const active = aba === k
+            return (
+              <button
+                key={k}
+                onClick={() => setAba(k)}
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: '12px 16px', ...MONO, fontSize: 11, letterSpacing: 0.5,
+                  textTransform: 'uppercase' as const,
+                  color: active ? 'var(--accent)' : 'var(--text-mute)',
+                  borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
+                  marginBottom: -1, transition: 'color 0.15s',
+                }}
+              >
+                {label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Content */}
         {isLoading && (
-          <div className="py-10 text-center">
-            <p className="text-[11px] tracking-widest" style={{ ...MONO, color: '#333' }}>CARREGANDO…</p>
+          <div style={{ padding: '40px 0', textAlign: 'center' }}>
+            <p style={{ ...MONO, fontSize: 11, color: 'var(--text-mute)', letterSpacing: 0.6 }}>CARREGANDO…</p>
           </div>
         )}
 
         {!isLoading && itens.length === 0 && (
-          <div className="py-20 text-center">
-            <span className="text-4xl" style={{ color: '#e8b84b' }}>+</span>
-            <p className="mt-4 text-[11px] tracking-widest" style={{ ...MONO, color: '#555' }}>
-              NENHUM REGISTRO · TUDO EM DIA
+          <div style={{ padding: '60px 0', textAlign: 'center' }}>
+            <svg width="28" height="35" viewBox="0 0 28 35" style={{ color: 'var(--accent)', filter: 'drop-shadow(0 0 8px var(--accent-glow-strong))', marginBottom: 14 }}>
+              <rect x="12.3" y="0" width="3.4" height="35" fill="currentColor" />
+              <rect x="0" y="11.2" width="28" height="3.4" fill="currentColor" />
+            </svg>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 17, color: 'var(--text)', marginBottom: 6 }}>Fila vazia.</div>
+            <p style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.5 }}>
+              PRÓXIMO TESTEMUNHO APARECE AQUI ASSIM QUE CHEGAR
             </p>
           </div>
         )}
@@ -321,7 +329,7 @@ export default function Admin() {
             key={t.id}
             t={t}
             onAprovar={() => moderar.mutate({ id: t.id, status: 'aprovado' })}
-            onRejeitar={(m) => moderar.mutate({ id: t.id, status: 'rejeitado', motivo: m })}
+            onRejeitar={m => moderar.mutate({ id: t.id, status: 'rejeitado', motivo: m })}
           />
         ))}
       </div>

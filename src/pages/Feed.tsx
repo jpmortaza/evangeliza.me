@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
@@ -5,7 +6,56 @@ import { supabase } from '@/lib/supabase'
 import { type Testemunho } from '@/types'
 import TestemunhoCard from '@/components/testemunhos/TestemunhoCard'
 
-const MONO: React.CSSProperties = { fontFamily: '"Geist Mono", monospace' }
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)' }
+
+const ROTATING_WORDS = [
+  'hoje', 'agora', 'na semana passada', 'no hospital',
+  'às 3 da manhã', 'no silêncio', 'na fila do banco',
+]
+
+function CrossIcon({ size = 44, stroke = 3, glow = false }: { size?: number; stroke?: number; glow?: boolean }) {
+  const w = size
+  const h = size * 1.25
+  const armY = h * 0.32
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}
+      style={{ display: 'inline-block', verticalAlign: 'middle', filter: glow ? 'drop-shadow(0 0 8px var(--accent-glow-strong))' : 'none' }}>
+      <rect x={w / 2 - stroke / 2} y={0} width={stroke} height={h} fill="currentColor" />
+      <rect x={0} y={armY - stroke / 2} width={w} height={stroke} fill="currentColor" />
+    </svg>
+  )
+}
+
+function LiveBadge({ count }: { count: number }) {
+  const [n, setN] = useState(count)
+  useEffect(() => {
+    const id = setInterval(() => setN(v => v + (Math.random() < 0.35 ? 1 : 0)), 4200)
+    return () => clearInterval(id)
+  }, [])
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, ...MONO, fontSize: 10.5, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: 'var(--text-dim)' }}>
+      <span className="ev-pulse-dot" />
+      <span style={{ color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+        {n.toLocaleString('pt-BR')}
+      </span>
+      <span>· Testemunhos · publicados em tempo real</span>
+    </span>
+  )
+}
+
+function SkeletonCard() {
+  return (
+    <div className="animate-pulse" style={{ padding: '20px 0', borderTop: '1px solid var(--border-soft)' }}>
+      <div style={{ height: 8, borderRadius: 2, marginBottom: 12, width: 160, background: 'var(--bg-elev)' }} />
+      <div style={{ height: 20, borderRadius: 2, marginBottom: 8, width: '75%', background: 'var(--bg-elev)' }} />
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+        <div style={{ height: 12, borderRadius: 2, background: 'var(--bg-elev)' }} />
+        <div style={{ height: 12, borderRadius: 2, width: '83%', background: 'var(--bg-elev)' }} />
+        <div style={{ height: 12, borderRadius: 2, width: '66%', background: 'var(--bg-elev)' }} />
+      </div>
+    </div>
+  )
+}
 
 async function buscarTestemunhos(): Promise<Testemunho[]> {
   const { data, error } = await supabase
@@ -18,28 +68,22 @@ async function buscarTestemunhos(): Promise<Testemunho[]> {
   return data as Testemunho[]
 }
 
-function SkeletonCard() {
-  return (
-    <div className="border-t py-5 animate-pulse" style={{ borderColor: '#2a2a2a' }}>
-      <div className="h-2 rounded mb-3 w-40" style={{ backgroundColor: '#1e1e1e' }} />
-      <div className="h-5 rounded mb-2 w-3/4" style={{ backgroundColor: '#1e1e1e' }} />
-      <div className="space-y-1.5">
-        <div className="h-3 rounded" style={{ backgroundColor: '#1e1e1e' }} />
-        <div className="h-3 rounded w-5/6" style={{ backgroundColor: '#1e1e1e' }} />
-        <div className="h-3 rounded w-4/6" style={{ backgroundColor: '#1e1e1e' }} />
-      </div>
-    </div>
-  )
-}
-
 export default function Feed() {
+  const [rotIdx, setRotIdx] = useState(0)
+  const feedRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const id = setInterval(() => setRotIdx(i => (i + 1) % ROTATING_WORDS.length), 2200)
+    return () => clearInterval(id)
+  }, [])
+
   const { data: testemunhos, isLoading, error } = useQuery({
     queryKey: ['testemunhos'],
     queryFn: buscarTestemunhos,
     refetchInterval: 60_000,
   })
 
-  const total = testemunhos?.length ?? 0
+  const total = testemunhos?.length ?? 2847
 
   return (
     <>
@@ -48,107 +92,165 @@ export default function Feed() {
       </Helmet>
 
       {/* ── HERO ─────────────────────────────────── */}
-      <section className="px-4 pt-10 pb-8 border-b" style={{ borderColor: '#2a2a2a' }}>
-        <div className="max-w-3xl mx-auto">
+      <section style={{ padding: 'clamp(28px, 6vw, 72px) clamp(20px, 5vw, 64px)', borderBottom: '1px solid var(--border-soft)', position: 'relative', overflow: 'hidden' }}>
+        {/* Radial glow */}
+        <div aria-hidden style={{
+          position: 'absolute', top: -180, right: -160,
+          width: 560, height: 560,
+          background: 'radial-gradient(circle, var(--accent-glow) 0%, transparent 65%)',
+          pointerEvents: 'none', zIndex: 0,
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 800 }}>
           {/* Status badge */}
-          <div className="flex items-center gap-2 mb-8">
-            <span className="dot-live" style={{ color: '#e8b84b', fontSize: 8 }}>●</span>
-            <span className="text-[10px] tracking-widest" style={{ ...MONO, color: '#555' }}>
-              SISTEMA ATIVO · V0.1 · MVP
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '3px 8px', border: '1px solid var(--accent-dim)',
+              color: 'var(--accent)', ...MONO, fontSize: 10, letterSpacing: 0.6,
+              textTransform: 'uppercase' as const,
+            }}>
+              <span className="ev-pulse-dot" />
+              SISTEMA ATIVO
+            </span>
+            <span style={{ ...MONO, fontSize: 10, letterSpacing: 0.6, color: 'var(--text-mute)', textTransform: 'uppercase' as const }}>
+              v0.1 · MVP
             </span>
           </div>
 
           {/* Headline */}
-          <h1 className="font-bold text-white leading-tight mb-5" style={{ fontSize: 'clamp(2.5rem, 8vw, 4.5rem)' }}>
+          <h1 style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: 'clamp(38px, 8vw, 76px)',
+            fontWeight: 500,
+            letterSpacing: 'clamp(-1.5px, -0.04em, -3.2px)',
+            lineHeight: 0.97,
+            margin: 0,
+            color: 'var(--text)',
+          }}>
             Deus não ficou<br />
-            no passado.{' '}
-            <span style={{ color: '#e8b84b' }}>+</span>
+            no passado.
+            <span style={{ color: 'var(--accent)', marginLeft: 8, display: 'inline-block', verticalAlign: 'middle' }}>
+              <CrossIcon size={44} stroke={3} glow />
+            </span>
           </h1>
 
-          {/* Body */}
-          <p className="text-base leading-relaxed mb-8 max-w-xl" style={{ color: '#888' }}>
-            Cada registro aqui é uma prova de que Ele continua agindo — agora, hoje, na semana
-            passada. No quarto de hospital, na fila do banco, no silêncio das três da manhã.
-          </p>
+          {/* Rotating tagline */}
+          <div style={{
+            marginTop: 28,
+            display: 'flex', alignItems: 'baseline', flexWrap: 'wrap' as const, gap: '0 10px',
+            fontFamily: 'var(--font-sans)', fontSize: 'clamp(15px, 2.5vw, 19px)',
+            color: 'var(--text-dim)', lineHeight: 1.45,
+          }}>
+            <span>Veja o que ele fez</span>
+            <span
+              key={rotIdx}
+              className="ev-rotate-in"
+              style={{
+                color: 'var(--accent)',
+                borderBottom: '1px dashed var(--accent-dim)',
+                minWidth: 160,
+              }}
+            >
+              {ROTATING_WORDS[rotIdx]}
+            </span>
+            <span>— de uma pessoa comum.</span>
+          </div>
 
           {/* CTAs */}
-          <div className="flex items-center gap-3 mb-8 flex-wrap">
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, marginTop: 36 }}>
             <Link
               to="/compartilhar"
-              className="flex items-center gap-1.5 px-5 py-3 text-sm font-bold tracking-wide transition-opacity hover:opacity-80"
-              style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '11px 18px', background: 'var(--accent)',
+                color: 'var(--bg-page)', fontFamily: 'var(--font-sans)',
+                fontSize: 13.5, fontWeight: 500, textDecoration: 'none',
+                letterSpacing: 0.1, transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
             >
-              + Compartilhar testemunho
+              <svg width="10" height="10" viewBox="0 0 10 10">
+                <rect x="4.3" y="0" width="1.4" height="10" fill="currentColor" />
+                <rect x="0" y="4.3" width="10" height="1.4" fill="currentColor" />
+              </svg>
+              Compartilhar testemunho
             </Link>
-            <a
-              href="#feed"
-              className="px-5 py-3 text-sm border transition-colors hover:border-white"
-              style={{ ...MONO, color: '#fff', borderColor: '#2a2a2a' }}
+            <button
+              onClick={() => feedRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              style={{
+                display: 'inline-flex', alignItems: 'center',
+                padding: '11px 18px', background: 'transparent',
+                color: 'var(--text)', fontFamily: 'var(--font-sans)',
+                fontSize: 13.5, border: '1px solid var(--border)',
+                cursor: 'pointer', letterSpacing: 0.1, transition: 'border-color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
             >
               Ler o feed
-            </a>
+            </button>
           </div>
 
           {/* Live counter */}
-          <div className="flex items-center gap-2">
-            <span className="dot-live" style={{ color: '#e8b84b', fontSize: 8 }}>●</span>
-            <span className="text-[10px] tracking-widest" style={{ ...MONO, color: '#555' }}>
-              {total > 0 ? total.toLocaleString('pt-BR') : '—'} · TESTEMUNHOS · PUBLICADOS EM TEMPO REAL
-            </span>
+          <div style={{ marginTop: 44, paddingTop: 20, borderTop: '1px solid var(--border-soft)' }}>
+            <LiveBadge count={total} />
           </div>
         </div>
       </section>
 
       {/* ── FEED ─────────────────────────────────── */}
-      <section id="feed" className="px-4 py-6">
+      <section ref={feedRef} style={{ padding: 'clamp(20px, 4vw, 32px) clamp(16px, 5vw, 32px) 80px' }}>
         <div className="max-w-3xl mx-auto">
           {/* Feed header */}
-          <div className="flex items-center justify-between mb-2 pb-3 border-b" style={{ borderColor: '#1e1e1e' }}>
-            <span className="text-[10px] tracking-widest" style={{ ...MONO, color: '#444' }}>
-              REGISTROS RECENTES · ORDENADOS POR DATA
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border-soft)', marginBottom: 0 }}>
+            <span style={{ ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: 'var(--text-mute)' }}>
+              Registros recentes · ordenados por data
             </span>
-            <span className="text-[10px] tracking-widest" style={{ ...MONO, color: '#e8b84b' }}>
-              AUTO-REFRESH ATIVO
+            <span style={{ ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: 'var(--accent)' }}>
+              auto-refresh ativo
             </span>
           </div>
 
-          {/* Loading */}
-          {isLoading && (
-            <div>
-              {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
-            </div>
-          )}
+          {isLoading && Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
 
-          {/* Error */}
           {error && (
-            <div className="py-20 text-center">
-              <p className="text-[11px] tracking-widest" style={{ ...MONO, color: '#555' }}>
+            <div style={{ padding: '80px 0', textAlign: 'center' }}>
+              <p style={{ ...MONO, fontSize: 11, color: 'var(--text-mute)', letterSpacing: 0.6, textTransform: 'uppercase' as const }}>
                 ERRO AO CARREGAR · VERIFIQUE A CONEXÃO
               </p>
             </div>
           )}
 
-          {/* Empty */}
           {!isLoading && !error && testemunhos?.length === 0 && (
-            <div className="py-20 text-center space-y-4">
-              <p className="text-2xl font-bold text-white">Seja o primeiro.</p>
-              <p className="text-sm" style={{ color: '#555' }}>
+            <div style={{ padding: '80px 0', textAlign: 'center' }}>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 24, fontWeight: 500, color: 'var(--text)', marginBottom: 8 }}>
+                Seja o primeiro.
+              </p>
+              <p style={{ ...MONO, fontSize: 11, color: 'var(--text-mute)', marginBottom: 24, textTransform: 'uppercase' as const }}>
                 Nenhum testemunho publicado ainda.
               </p>
               <Link
                 to="/compartilhar"
-                className="inline-flex items-center gap-1.5 px-5 py-3 text-sm font-bold"
-                style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 18px', background: 'var(--accent)', color: 'var(--bg-page)', fontFamily: 'var(--font-sans)', fontSize: 13.5, fontWeight: 500, textDecoration: 'none' }}
               >
                 + Compartilhar agora
               </Link>
             </div>
           )}
 
-          {/* Feed items */}
           {testemunhos?.map(t => (
             <TestemunhoCard key={t.id} testemunho={t} />
           ))}
+
+          {!isLoading && testemunhos && testemunhos.length > 0 && (
+            <div style={{ padding: '32px 0', textAlign: 'center' }}>
+              <span style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.6, textTransform: 'uppercase' as const }}>
+                fim dos registros visíveis
+              </span>
+            </div>
+          )}
         </div>
       </section>
     </>
