@@ -7,8 +7,7 @@ import { type Testemunho, CATEGORIAS } from '@/types'
 import { formatarDataRelativa, getDisplayId } from '@/lib/utils'
 import YouTubeEmbed from '@/components/testemunhos/YouTubeEmbed'
 import BotoesCompartilhar from '@/components/compartilhamento/BotoesCompartilhar'
-
-const MONO: React.CSSProperties = { fontFamily: '"Geist Mono", monospace' }
+import SectionHeader from '@/components/layout/Header'
 
 async function buscarTestemunho(id: string): Promise<Testemunho> {
   const { data, error } = await supabase
@@ -19,6 +18,23 @@ async function buscarTestemunho(id: string): Promise<Testemunho> {
     .single()
   if (error) throw error
   return data as Testemunho
+}
+
+function Avatar({ nome, size = 40 }: { nome: string; size?: number }) {
+  const letra = nome === 'Anônimo' ? '+' : nome[0].toUpperCase()
+  const isAnon = letra === '+'
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: isAnon ? 'var(--accent-dim)' : 'var(--bg-elev)',
+      border: '1px solid var(--border)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: isAnon ? size * 0.5 : size * 0.44, fontWeight: 700,
+      color: isAnon ? 'var(--accent)' : 'var(--text)',
+    }}>
+      {letra}
+    </div>
+  )
 }
 
 export default function TestemunhoPage() {
@@ -38,42 +54,35 @@ export default function TestemunhoPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 animate-pulse">
-        <div className="h-2 rounded mb-6 w-32" style={{ backgroundColor: '#1e1e1e' }} />
-        <div className="h-8 rounded mb-4 w-3/4" style={{ backgroundColor: '#1e1e1e' }} />
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-3 rounded" style={{ backgroundColor: '#1e1e1e' }} />
-          ))}
+      <>
+        <SectionHeader title="Testemunho" />
+        <div className="animate-pulse" style={{ padding: '16px' }}>
+          <div style={{ height: 20, width: '70%', borderRadius: 4, background: 'var(--bg-elev)', marginBottom: 12 }} />
+          <div style={{ height: 14, borderRadius: 4, background: 'var(--bg-elev)', marginBottom: 8 }} />
+          <div style={{ height: 14, width: '80%', borderRadius: 4, background: 'var(--bg-elev)' }} />
         </div>
-      </div>
+      </>
     )
   }
 
   if (error || !t) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <span className="text-4xl" style={{ color: '#333' }}>+</span>
-        <p className="mt-4 text-[11px] tracking-widest mb-6" style={{ ...MONO, color: '#555' }}>
-          REGISTRO NÃO ENCONTRADO
-        </p>
-        <Link
-          to="/"
-          className="text-[10px] tracking-widest transition-colors hover:text-white"
-          style={{ ...MONO, color: '#444' }}
-        >
-          ← VOLTAR AO FEED
-        </Link>
-      </div>
+      <>
+        <SectionHeader title="Testemunho" />
+        <div style={{ padding: '60px 16px', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 23, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Não encontrado.</p>
+          <Link to="/" style={{ color: 'var(--accent)', fontFamily: 'var(--font-sans)', fontSize: 15 }}>← Voltar ao feed</Link>
+        </div>
+      </>
     )
   }
 
-  const autor = t.eh_anonimo ? 'ANÔNIMO' : (t.usuarios?.nome ?? t.nome_anonimo ?? 'ANÔNIMO').toUpperCase()
+  const autor = t.eh_anonimo ? 'Anônimo' : (t.usuarios?.nome ?? t.nome_anonimo ?? 'Anônimo')
   const midia = t.midias?.[0]
   const url = `${window.location.origin}/testemunho/${t.id}`
   const displayId = getDisplayId(t.criado_em, t.id)
-  const catLabel = t.categoria ? CATEGORIAS[t.categoria].toUpperCase() : null
-  const tempo = formatarDataRelativa(t.criado_em).toUpperCase()
+  const tempo = formatarDataRelativa(t.criado_em)
+  const catLabel = t.categoria ? CATEGORIAS[t.categoria] : null
 
   return (
     <>
@@ -86,89 +95,70 @@ export default function TestemunhoPage() {
         {midia?.tipo === 'imagem' && <meta property="og:image" content={midia.url} />}
       </Helmet>
 
-      <div className="max-w-2xl mx-auto px-4 py-10">
-        {/* Back */}
-        <Link
-          to="/"
-          className="inline-block text-[10px] tracking-widest mb-8 transition-colors hover:text-white"
-          style={{ ...MONO, color: '#444' }}
-        >
-          ← FEED
-        </Link>
+      <SectionHeader title="Testemunho" />
 
-        {/* Meta */}
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <span className="text-[11px]" style={{ ...MONO, color: '#e8b84b' }}>{displayId}</span>
-          {catLabel && (
-            <>
-              <span style={{ color: '#333' }}>·</span>
-              <span className="text-[10px] px-1.5 py-px border" style={{ ...MONO, color: '#888', borderColor: '#2a2a2a' }}>
-                {catLabel}
-              </span>
-            </>
-          )}
-          <span style={{ color: '#333' }}>·</span>
-          <span className="text-[10px]" style={{ ...MONO, color: '#444' }}>{tempo}</span>
+      <article style={{ padding: '16px' }}>
+        {/* Author row */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+          <Avatar nome={autor} size={48} />
+          <div>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{autor}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-dim)' }}>{displayId}</span>
+              <span style={{ color: 'var(--text-mute)' }}>·</span>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text-dim)' }}>{tempo}</span>
+              {catLabel && (
+                <>
+                  <span style={{ color: 'var(--text-mute)' }}>·</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase' }}>{catLabel}</span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Title */}
-        <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-4">{t.titulo}</h1>
-
-        {/* Author + share */}
-        <div className="flex items-center justify-between gap-3 mb-8 pb-6 border-b" style={{ borderColor: '#2a2a2a' }}>
-          <span className="text-[10px]" style={{ ...MONO, color: '#444' }}>{autor}</span>
-          <BotoesCompartilhar titulo={t.titulo} conteudo={t.conteudo} url={url} />
-        </div>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3, margin: '0 0 12px' }}>
+          {t.titulo}
+        </h1>
 
         {/* Media */}
-        {midia?.tipo === 'youtube' && (
-          <div className="mb-8">
-            <YouTubeEmbed videoId={midia.url} title={t.titulo} />
-          </div>
-        )}
-        {midia?.tipo === 'imagem' && (
-          <img
-            src={midia.url}
-            alt={t.titulo}
-            className="w-full mb-8 max-h-96 object-cover"
-          />
-        )}
+        {midia?.tipo === 'youtube' && <div style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden' }}><YouTubeEmbed videoId={midia.url} title={t.titulo} /></div>}
+        {midia?.tipo === 'imagem' && <img src={midia.url} alt={t.titulo} style={{ width: '100%', borderRadius: 12, marginBottom: 16, maxHeight: 400, objectFit: 'cover' }} />}
 
         {/* Content */}
-        <div className="space-y-4">
-          {t.conteudo.split('\n').map((paragrafo, i) =>
-            paragrafo.trim() ? (
-              <p key={i} className="text-base leading-relaxed" style={{ color: '#aaa' }}>
-                {paragrafo}
-              </p>
+        <div style={{ marginBottom: 16 }}>
+          {t.conteudo.split('\n').map((p, i) =>
+            p.trim() ? (
+              <p key={i} style={{ fontFamily: 'var(--font-sans)', fontSize: 17, lineHeight: 1.6, color: 'var(--text)', margin: '0 0 12px' }}>{p}</p>
             ) : null
           )}
         </div>
 
-        {/* Bottom share */}
-        <div className="mt-12 pt-8 border-t text-center space-y-3" style={{ borderColor: '#2a2a2a' }}>
-          <p className="text-[10px] tracking-widest" style={{ ...MONO, color: '#444' }}>
-            ESTE TESTEMUNHO TE TOCOU?
-          </p>
-          <BotoesCompartilhar titulo={t.titulo} conteudo={t.conteudo} url={url} />
+        {/* Divider + stats */}
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginBottom: 4 }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)' }}>
+            {tempo} · evangeliza.me
+          </span>
         </div>
 
-        {/* CTA */}
-        <div className="mt-10 border p-8 text-center" style={{ borderColor: '#2a2a2a' }}>
-          <p className="text-[10px] tracking-widest mb-3" style={{ ...MONO, color: '#555' }}>
-            VOCÊ TAMBÉM TEM UMA HISTÓRIA ASSIM?
-          </p>
-          <p className="text-sm mb-6" style={{ color: '#888' }}>
-            Compartilhe como Deus agiu na sua vida. Pode ser anônimo.
-          </p>
-          <Link
-            to="/compartilhar"
-            className="inline-block text-sm font-bold px-6 py-3 tracking-widest transition-opacity hover:opacity-80"
-            style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}
-          >
-            + COMPARTILHAR
-          </Link>
+        {/* Share bar */}
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 360 }}>
+          <BotoesCompartilhar titulo={t.titulo} conteudo={t.conteudo} url={url} />
         </div>
+      </article>
+
+      {/* CTA */}
+      <div style={{ margin: '0 16px', borderRadius: 16, padding: 20, background: 'var(--bg-elev)', border: '1px solid var(--border)', textAlign: 'center' }}>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+          Você também tem uma história assim?
+        </p>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)', marginBottom: 16 }}>
+          Compartilhe como Deus agiu na sua vida. Pode ser anônimo.
+        </p>
+        <Link to="/compartilhar" style={{ display: 'inline-block', padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#000', fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>
+          Compartilhar
+        </Link>
       </div>
     </>
   )

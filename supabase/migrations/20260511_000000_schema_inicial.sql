@@ -38,7 +38,7 @@ create table if not exists public.testemunhos (
   usuario_id uuid references public.usuarios(id) on delete set null,
   nome_anonimo text,
   titulo text not null check (char_length(titulo) between 5 and 150),
-  conteudo text not null check (char_length(conteudo) >= 50),
+  conteudo text not null check (char_length(conteudo) >= 30),
   categoria text check (categoria in ('cura', 'provisao', 'salvacao', 'familia', 'libertacao', 'milagre', 'outro')),
   status text not null default 'pendente'
     check (status in ('pendente', 'aprovado', 'rejeitado')),
@@ -51,7 +51,7 @@ create table if not exists public.testemunhos (
   atualizado_em timestamptz default now(),
   -- busca full-text
   busca tsvector generated always as (
-    to_tsvector('portuguese', unaccent(titulo) || ' ' || unaccent(conteudo))
+    to_tsvector('portuguese', titulo || ' ' || conteudo)
   ) stored
 );
 

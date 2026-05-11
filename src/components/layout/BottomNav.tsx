@@ -1,62 +1,59 @@
 import { NavLink } from 'react-router-dom'
 
-function PlusIcon({ size = 10, stroke = 1.4 }: { size?: number; stroke?: number }) {
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'inline-block' }}>
-      <rect x={size / 2 - stroke / 2} y={0} width={stroke} height={size} fill="currentColor" />
-      <rect x={0} y={size / 2 - stroke / 2} width={size} height={stroke} fill="currentColor" />
-    </svg>
-  )
-}
-
-function CrossIcon({ size = 14, stroke = 1.6, glow = false }: { size?: number; stroke?: number; glow?: boolean }) {
-  const w = size
-  const h = size * 1.25
-  const armY = h * 0.32
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}
-      style={{ display: 'inline-block', filter: glow ? 'drop-shadow(0 0 6px var(--accent-glow-strong))' : 'none' }}>
-      <rect x={w / 2 - stroke / 2} y={0} width={stroke} height={h} fill="currentColor" />
-      <rect x={0} y={armY - stroke / 2} width={w} height={stroke} fill="currentColor" />
-    </svg>
-  )
-}
-
 const TABS = [
-  { to: '/', label: 'Feed', end: true, primary: false },
-  { to: '/compartilhar', label: 'Postar', end: false, primary: true },
-  { to: '/admin', label: 'Admin', end: false, primary: false },
+  {
+    to: '/', end: true,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M9 21V12h6v9" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    to: '/compartilhar', end: false,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M12 20h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    to: '/sobre', end: false,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 8v1M12 11v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    to: '/admin', end: false,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
 ]
 
 export default function BottomNav() {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 sm:hidden z-50 border-t"
-      style={{ background: 'var(--bg)', borderColor: 'var(--border-soft)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="fixed bottom-0 left-0 right-0 sm:hidden z-50"
+      style={{ background: 'var(--bg)', borderTop: '1px solid var(--border)' }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-        {TABS.map(({ to, label, end, primary }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            style={{ flex: 1, textDecoration: 'none' }}
-          >
+      <div style={{ display: 'flex', justifyContent: 'space-around', padding: '6px 0 env(safe-area-inset-bottom, 6px)' }}>
+        {TABS.map(({ to, end, icon }) => (
+          <NavLink key={to} to={to} end={end} style={{ textDecoration: 'none', flex: 1 }}>
             {({ isActive }) => (
               <div style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 4, padding: '10px 0',
-                color: (primary || isActive) ? 'var(--accent)' : 'var(--text-mute)',
+                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                padding: '10px 0',
+                color: isActive ? 'var(--accent)' : 'var(--text-dim)',
               }}>
-                <span style={{ display: 'inline-flex', color: (primary || isActive) ? 'var(--accent)' : 'var(--text-mute)' }}>
-                  {primary
-                    ? <CrossIcon size={14} stroke={1.6} glow={isActive} />
-                    : <PlusIcon size={10} stroke={1.4} />
-                  }
-                </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase' as const }}>
-                  {label}
-                </span>
+                {icon}
               </div>
             )}
           </NavLink>

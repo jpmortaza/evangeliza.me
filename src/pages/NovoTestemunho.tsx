@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { supabase } from '@/lib/supabase'
 import { extrairYoutubeId } from '@/lib/utils'
 import { CATEGORIAS } from '@/types'
+import SectionHeader from '@/components/layout/Header'
 
-const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)' }
 const MAX_CHARS = 2000
 const MIN_CHARS = 30
 
@@ -23,40 +23,19 @@ const INICIAL: FormState = {
   categoria: '', youtubeUrl: '', foto: null,
 }
 
-function Field({ label, optional, hint, children }: { label: string; optional?: boolean; hint?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div style={{ marginBottom: 8, display: 'flex', gap: 8, alignItems: 'baseline' }}>
-        <span style={{ ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: 'var(--accent)' }}>{label}</span>
-        {optional && <span style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)' }}>· opcional</span>}
-      </div>
-      {children}
-      {hint && <p style={{ marginTop: 6, ...MONO, fontSize: 10, color: 'var(--text-mute)' }}>{hint}</p>}
-    </div>
-  )
-}
-
 export default function NovoTestemunho() {
   const [form, setForm] = useState<FormState>(INICIAL)
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
-  const [enviado_id, setEnviadoId] = useState('')
+  const [enviadoId, setEnviadoId] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [youtubeErro, setYoutubeErro] = useState(false)
-  const [timer, setTimer] = useState(58)
   const fileRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (enviado) return
-    const id = setInterval(() => setTimer(t => Math.max(0, t - 1)), 1000)
-    return () => clearInterval(id)
-  }, [enviado])
 
   const set = (k: keyof FormState, v: string | boolean | File | null) =>
     setForm(p => ({ ...p, [k]: v }))
 
   const charCount = form.conteudo.length
-  const pct = Math.min((charCount / MAX_CHARS) * 100, 100)
   const canSubmit = form.titulo.trim().length >= 5 && charCount >= MIN_CHARS && !youtubeErro
 
   const enviar = async (e: React.FormEvent) => {
@@ -101,7 +80,7 @@ export default function NovoTestemunho() {
       setEnviado(true)
       setForm(INICIAL)
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'ERRO AO ENVIAR. TENTE NOVAMENTE.')
+      setErro(e instanceof Error ? e.message : 'Erro ao enviar. Tente novamente.')
     } finally {
       setEnviando(false)
     }
@@ -109,240 +88,207 @@ export default function NovoTestemunho() {
 
   if (enviado) {
     return (
-      <div style={{ padding: 'clamp(40px,6vw,80px) clamp(20px,5vw,64px)', minHeight: '80vh' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px', border: '1px solid var(--accent-dim)', color: 'var(--accent)', ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const }}>
-          <span className="ev-pulse-dot" />
-          RECEBIDO
-        </span>
-        <h2 style={{ fontFamily: 'var(--font-sans)', fontWeight: 500, fontSize: 'clamp(32px, 6vw, 56px)', letterSpacing: -2, lineHeight: 1.02, margin: '20px 0 16px', color: 'var(--text)' }}>
-          Obrigado por confiar isso a nós.
-        </h2>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 16, color: 'var(--text-dim)', lineHeight: 1.55, maxWidth: 540, margin: '0 0 28px' }}>
-          Seu testemunho está em revisão. Aprovamos quase tudo — apenas conferimos se não há identificação de terceiros sem consentimento. Em média, leva menos de 2 horas.
-        </p>
-
-        <div style={{ padding: 18, border: '1px solid var(--border)', background: 'var(--bg-elev)', maxWidth: 540, marginBottom: 28 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap' as const, gap: 8 }}>
-            <span style={{ ...MONO, fontSize: 11, color: 'var(--accent)', letterSpacing: 0.4 }}>{enviado_id}</span>
-            <span style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.4 }}>RASCUNHO ENVIADO</span>
-          </div>
-          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text-mute)', margin: 0 }}>
-            Você pode acompanhar o status com este código.
+      <>
+        <Helmet><title>Enviado — evangeliza.me</title></Helmet>
+        <SectionHeader title="Enviado" />
+        <div style={{ padding: '32px 16px', textAlign: 'center' }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%', background: 'var(--accent-glow)',
+            border: '2px solid var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 20px', fontSize: 28, color: 'var(--accent)', fontWeight: 700,
+          }}>+</div>
+          <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 23, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>
+            Obrigado por confiar isso a nós.
+          </h2>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 15, color: 'var(--text-dim)', maxWidth: 380, margin: '0 auto 8px', lineHeight: 1.55 }}>
+            Seu testemunho está em revisão. Aprovamos quase tudo — apenas conferimos se o conteúdo é genuíno e respeitoso.
           </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-mute)', marginBottom: 28 }}>
+            Código: {enviadoId}
+          </p>
           <button
-            onClick={() => { setEnviado(false); setTimer(58) }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 18px', background: 'var(--accent)', color: 'var(--bg-page)', fontFamily: 'var(--font-sans)', fontSize: 13.5, fontWeight: 500, border: 'none', cursor: 'pointer' }}
+            onClick={() => setEnviado(false)}
+            style={{ padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#000', fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer' }}
           >
-            <svg width="10" height="10" viewBox="0 0 10 10"><rect x="4.3" y="0" width="1.4" height="10" fill="currentColor" /><rect x="0" y="4.3" width="10" height="1.4" fill="currentColor" /></svg>
             Postar outro
           </button>
         </div>
-      </div>
+      </>
     )
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', background: 'transparent', border: '1px solid var(--border)',
-    color: 'var(--text)', padding: '12px 14px', fontSize: 14,
+    width: '100%', background: 'transparent',
+    border: '1px solid var(--border)', borderRadius: 8,
+    color: 'var(--text)', padding: '10px 14px', fontSize: 15,
     fontFamily: 'var(--font-sans)', transition: 'border-color 0.15s',
   }
 
   return (
     <>
       <Helmet><title>Postar — evangeliza.me</title></Helmet>
+      <SectionHeader title="Compartilhar testemunho" />
 
-      <div style={{ padding: 'clamp(24px,5vw,48px) clamp(16px,5vw,64px) 80px', minHeight: '80vh' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'clamp(16px,4vw,28px)', gap: 12, flexWrap: 'wrap' as const }}>
-          <div>
-            <span style={{ ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: 'var(--accent)' }}>
-              FORMULÁRIO · /postar
-            </span>
-            <h1 style={{ fontFamily: 'var(--font-sans)', fontWeight: 500, fontSize: 'clamp(28px,5vw,44px)', letterSpacing: -1.5, lineHeight: 1.05, margin: '10px 0 8px', color: 'var(--text)' }}>
-              O que Deus fez na sua vida?
-            </h1>
-            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 15, color: 'var(--text-dim)', margin: 0, maxWidth: 540 }}>
-              Sem cadastro, sem email, sem captcha. Você escreve, a gente publica.
-            </p>
-          </div>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '3px 8px', border: '1px solid var(--border)',
-            color: 'var(--text-dim)', ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const,
-          }}>
-            <span className="ev-pulse-dot" />
-            Tempo médio · {timer}s
-          </span>
-        </div>
+      <form onSubmit={enviar} style={{ padding: '16px' }}>
+        {/* Compose area */}
+        <div style={{ display: 'flex', gap: 12, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+          {/* Avatar */}
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+            background: 'var(--accent-dim)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18, fontWeight: 700, color: 'var(--accent)',
+          }}>+</div>
 
-        <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 720 }}>
-          <Field label="Título · obrigatório">
+          <div style={{ flex: 1 }}>
             <input
               type="text"
               value={form.titulo}
               onChange={e => set('titulo', e.target.value)}
-              placeholder="Em poucas palavras, o que aconteceu?"
+              placeholder="Título — o que aconteceu?"
               maxLength={150}
-              style={{ ...inputStyle, fontSize: 16, fontWeight: 500 }}
+              style={{ ...inputStyle, marginBottom: 10, fontSize: 17, fontWeight: 600, border: 'none', borderBottom: '1px solid var(--border)', borderRadius: 0, padding: '6px 0' }}
               required
             />
-          </Field>
-
-          <Field label="Testemunho · obrigatório" hint="Conte como foi. Não precisa de jargão religioso. Sua voz vale mais que vocabulário bonito.">
             <textarea
+              className="compose-input"
               value={form.conteudo}
               onChange={e => set('conteudo', e.target.value.slice(0, MAX_CHARS))}
-              placeholder="Comece pelo momento. Onde você estava, o que tinha acabado de acontecer, o que você sentiu…"
-              rows={10}
-              style={{ ...inputStyle, resize: 'vertical' }}
+              placeholder="Conte sua história. Sem jargão religioso. Sua voz vale mais que vocabulário bonito."
+              rows={6}
               required
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, ...MONO, fontSize: 10.5, color: 'var(--text-mute)', letterSpacing: 0.4 }}>
-              <span>min. {MIN_CHARS} caracteres</span>
-              <span style={{ color: charCount >= MIN_CHARS ? 'var(--accent)' : 'var(--text-mute)', fontVariantNumeric: 'tabular-nums' }}>
-                {charCount} / {MAX_CHARS}
+
+            {/* Char counter */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-mute)' }}>
+                mín. {MIN_CHARS}
               </span>
-            </div>
-            <div style={{ marginTop: 4, height: 1, background: 'var(--bg-elev)' }}>
-              <div style={{ height: 1, width: `${pct}%`, background: charCount >= MIN_CHARS ? 'var(--accent)' : 'var(--border)', transition: 'width 0.3s, background 0.3s' }} />
-            </div>
-          </Field>
-
-          {/* 2-col grid for name + category */}
-          <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-            <Field label="Seu nome" optional hint="Deixe vazio para postar como Anônimo. Anônimo é sagrado.">
-              <input
-                type="text"
-                value={form.nome}
-                onChange={e => set('nome', e.target.value)}
-                placeholder="Anônimo"
-                disabled={form.anonimo}
-                style={{ ...inputStyle, opacity: form.anonimo ? 0.3 : 1 }}
-              />
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={form.anonimo}
-                  onChange={e => set('anonimo', e.target.checked)}
-                  style={{ accentColor: 'var(--accent)' }}
-                />
-                <span style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase' as const }}>
-                  POSTAR COMO ANÔNIMO
-                </span>
-              </label>
-            </Field>
-
-            <Field label="Categoria" optional>
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-                {Object.entries(CATEGORIAS).map(([k, v]) => {
-                  const active = form.categoria === k
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => set('categoria', active ? '' : k)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center',
-                        padding: '7px 10px', cursor: 'pointer',
-                        background: 'transparent',
-                        border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
-                        color: active ? 'var(--accent)' : 'var(--text-dim)',
-                        ...MONO, fontSize: 11, letterSpacing: 0.4,
-                        textTransform: 'uppercase' as const,
-                        transition: 'border-color 0.15s, color 0.15s',
-                      }}
-                    >
-                      {v}
-                    </button>
-                  )
-                })}
-              </div>
-            </Field>
-          </div>
-
-          <Field label="URL do YouTube" optional hint="Cole a URL de um vídeo relacionado ao seu testemunho.">
-            <input
-              type="url"
-              value={form.youtubeUrl}
-              onChange={e => {
-                set('youtubeUrl', e.target.value)
-                if (e.target.value) setYoutubeErro(!extrairYoutubeId(e.target.value))
-                else setYoutubeErro(false)
-              }}
-              placeholder="https://youtu.be/..."
-              style={{ ...inputStyle, borderColor: youtubeErro ? '#ef4444' : 'var(--border)' }}
-            />
-            {youtubeErro && <p style={{ marginTop: 4, ...MONO, fontSize: 10, color: '#ef4444' }}>URL INVÁLIDA</p>}
-          </Field>
-
-          <Field label="Foto" optional hint="jpg · png · até 10 MB">
-            <label
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                padding: '14px 16px', border: '1px dashed var(--border)',
-                cursor: 'pointer', color: 'var(--text-dim)',
-                ...MONO, fontSize: 11.5, letterSpacing: 0.4, textTransform: 'uppercase' as const,
-                transition: 'border-color 0.15s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text-dim)')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-            >
-              <span>
-                <svg width="10" height="10" viewBox="0 0 10 10" style={{ marginRight: 8, verticalAlign: 'middle' }}>
-                  <rect x="4.3" y="0" width="1.4" height="10" fill="currentColor" />
-                  <rect x="0" y="4.3" width="10" height="1.4" fill="currentColor" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {/* Progress ring */}
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="var(--border)" strokeWidth="2.5" />
+                  <circle cx="12" cy="12" r="10" fill="none"
+                    stroke={charCount >= MIN_CHARS ? 'var(--accent)' : 'var(--text-mute)'}
+                    strokeWidth="2.5"
+                    strokeDasharray={`${Math.min((charCount / MAX_CHARS) * 62.8, 62.8)} 62.8`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 12 12)"
+                    style={{ transition: 'stroke-dasharray 0.2s, stroke 0.2s' }}
+                  />
                 </svg>
-                {form.foto ? form.foto.name : 'arraste ou clique para selecionar'}
-              </span>
-              <span style={{ color: 'var(--text-mute)', fontSize: 10 }}>jpg · png · até 10mb</span>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={e => {
-                  const f = e.target.files?.[0]
-                  if (f && f.size <= 10 * 1024 * 1024) set('foto', f)
-                  else if (f) setErro('FOTO: máximo 10 MB.')
-                }}
-              />
-            </label>
-          </Field>
-
-          {erro && (
-            <p style={{ ...MONO, fontSize: 11, color: '#ef4444', padding: '10px 12px', border: '1px solid rgba(239,68,68,0.3)' }}>
-              {erro}
-            </p>
-          )}
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' as const, paddingTop: 8 }}>
-            <button
-              type="submit"
-              disabled={enviando || !canSubmit}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '11px 18px', background: 'var(--accent)',
-                color: 'var(--bg-page)', fontFamily: 'var(--font-sans)',
-                fontSize: 13.5, fontWeight: 500, border: 'none', cursor: 'pointer',
-                opacity: (enviando || !canSubmit) ? 0.45 : 1,
-                transition: 'opacity 0.15s',
-              }}
-            >
-              <svg width="12" height="15" viewBox="0 0 12 15">
-                <rect x="5.3" y="0" width="1.4" height="15" fill="currentColor" />
-                <rect x="0" y="4.8" width="12" height="1.4" fill="currentColor" />
-              </svg>
-              {enviando ? 'Enviando…' : 'Publicar testemunho'}
-            </button>
-            <span style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', maxWidth: 320 }}>
-              Ao publicar você concorda com nossa moderação simples · sem cadastro · sem rastreio
-            </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: charCount >= MIN_CHARS ? 'var(--accent)' : 'var(--text-mute)', fontVariantNumeric: 'tabular-nums' }}>
+                  {MAX_CHARS - charCount}
+                </span>
+              </div>
+            </div>
           </div>
-        </form>
-      </div>
+        </div>
+
+        {/* Optional fields */}
+        <div style={{ padding: '16px 0', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--text-mute)', margin: 0 }}>Opcionais</p>
+
+          {/* Nome */}
+          <input
+            type="text"
+            value={form.nome}
+            onChange={e => set('nome', e.target.value)}
+            placeholder="Seu nome (deixe vazio para anônimo)"
+            disabled={form.anonimo}
+            style={{ ...inputStyle, opacity: form.anonimo ? 0.4 : 1 }}
+          />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
+            <input type="checkbox" checked={form.anonimo} onChange={e => set('anonimo', e.target.checked)} style={{ accentColor: 'var(--accent)', width: 16, height: 16 }} />
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)' }}>Postar como anônimo</span>
+          </label>
+
+          {/* Categoria */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {Object.entries(CATEGORIAS).map(([k, v]) => {
+              const active = form.categoria === k
+              return (
+                <button
+                  key={k} type="button"
+                  onClick={() => set('categoria', active ? '' : k)}
+                  style={{
+                    padding: '6px 14px', borderRadius: 9999,
+                    border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                    background: active ? 'var(--accent-glow)' : 'transparent',
+                    color: active ? 'var(--accent)' : 'var(--text-dim)',
+                    fontFamily: 'var(--font-sans)', fontSize: 14, cursor: 'pointer',
+                    transition: 'border-color 0.15s, color 0.15s, background 0.15s',
+                  }}
+                >{v}</button>
+              )
+            })}
+          </div>
+
+          {/* YouTube */}
+          <input
+            type="url"
+            value={form.youtubeUrl}
+            onChange={e => {
+              set('youtubeUrl', e.target.value)
+              if (e.target.value) setYoutubeErro(!extrairYoutubeId(e.target.value))
+              else setYoutubeErro(false)
+            }}
+            placeholder="URL do YouTube (opcional)"
+            style={{ ...inputStyle, borderColor: youtubeErro ? '#f4212e' : 'var(--border)' }}
+          />
+          {youtubeErro && <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#f4212e', margin: 0 }}>URL inválida</p>}
+
+          {/* Foto */}
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 14px', borderRadius: 8,
+            border: '1px dashed var(--border)', cursor: 'pointer',
+            color: 'var(--text-dim)', fontFamily: 'var(--font-sans)', fontSize: 14,
+            transition: 'border-color 0.15s',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text-dim)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+              <polyline points="21 15 16 10 5 21" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+            </svg>
+            {form.foto ? form.foto.name : 'Adicionar foto (jpg, png — até 10 MB)'}
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f && f.size <= 10 * 1024 * 1024) set('foto', f)
+                else if (f) setErro('Foto: máximo 10 MB.')
+              }}
+            />
+          </label>
+        </div>
+
+        {erro && <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#f4212e', padding: '12px 0' }}>{erro}</p>}
+
+        {/* Submit */}
+        <div style={{ paddingTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            type="submit"
+            disabled={enviando || !canSubmit}
+            style={{
+              padding: '10px 22px', borderRadius: 9999,
+              background: 'var(--accent)', color: '#000',
+              fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
+              border: 'none', cursor: canSubmit && !enviando ? 'pointer' : 'default',
+              opacity: (enviando || !canSubmit) ? 0.5 : 1,
+              transition: 'opacity 0.15s',
+            }}
+          >
+            {enviando ? 'Enviando…' : 'Publicar'}
+          </button>
+        </div>
+
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-mute)', marginTop: 8, textAlign: 'right' }}>
+          Revisado pelos Zeladores antes de publicar.
+        </p>
+      </form>
     </>
   )
 }
