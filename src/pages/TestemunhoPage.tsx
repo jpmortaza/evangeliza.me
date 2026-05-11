@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 async function buscarTestemunho(id: string): Promise<Testemunho> {
   const { data, error } = await supabase
     .from('testemunhos')
-    .select('*, usuarios(nome, slug, avatar_url), midias(*)')
+    .select('*, usuarios!testemunhos_usuario_id_fkey(nome, slug, avatar_url), midias(*)')
     .eq('id', id)
     .eq('status', 'aprovado')
     .single()

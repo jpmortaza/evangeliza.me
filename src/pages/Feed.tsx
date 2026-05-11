@@ -10,7 +10,7 @@ import SectionHeader from '@/components/layout/Header'
 async function buscarTestemunhos(categoria?: Categoria): Promise<Testemunho[]> {
   let q = supabase
     .from('testemunhos')
-    .select('*, usuarios(nome, slug, avatar_url), midias(*)')
+    .select('*, usuarios!testemunhos_usuario_id_fkey(nome, slug, avatar_url), midias(*)')
     .eq('status', 'aprovado')
     .order('criado_em', { ascending: false })
     .limit(60)
@@ -124,8 +124,22 @@ export default function Feed() {
 
       {/* Error */}
       {error && (
-        <div style={{ padding: '48px 16px', textAlign: 'center' }}>
-          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 15, color: 'var(--text-dim)' }}>Erro ao carregar. Verifique a conexão.</p>
+        <div style={{ padding: '64px 16px', textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>⚡</div>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>
+            Não foi possível carregar
+          </p>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text-dim)', marginBottom: 20 }}>
+            Verifique sua conexão e tente novamente.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '9px 22px', borderRadius: 9999,
+              background: 'var(--accent)', color: '#fff', border: 'none',
+              fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >Tentar novamente</button>
         </div>
       )}
 
@@ -141,15 +155,47 @@ export default function Feed() {
 
       {/* Empty state */}
       {!isLoading && !error && testemunhos?.length === 0 && (
-        <div style={{ padding: '60px 16px', textAlign: 'center' }}>
-          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Seja o primeiro.</p>
-          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)', marginBottom: 24 }}>
-            {catFiltro ? 'Nenhum testemunho nessa categoria ainda.' : 'Nenhum testemunho publicado ainda.'}
+        <div style={{ padding: '48px 16px 64px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', maxWidth: 480, margin: '0 auto' }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%', marginBottom: 20,
+            background: 'linear-gradient(135deg, oklch(0.65 0.22 215 / 0.15), var(--accent-glow))',
+            border: '2px solid var(--accent-dim)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="32" height="32" viewBox="0 0 32 40" fill="none">
+              <rect x="12" y="0" width="8" height="40" rx="4" fill="url(#eg-grad)" />
+              <rect x="0" y="13" width="32" height="8" rx="4" fill="url(#eg-grad)" />
+              <defs>
+                <linearGradient id="eg-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#38bdf8" />
+                  <stop offset="100%" stopColor="#a855f7" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 8, lineHeight: 1.3 }}>
+            {catFiltro ? 'Nenhum testemunho aqui ainda.' : 'Seja o primeiro a testemunhar.'}
+          </p>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)', marginBottom: 28, lineHeight: 1.6 }}>
+            {catFiltro
+              ? 'Ainda não há testemunhos nessa categoria. Que tal compartilhar o seu?'
+              : 'O seu relato pode encorajar alguém que está esperando um milagre. Conte o que Deus fez por você.'}
           </p>
           <Link
             to="/compartilhar"
-            style={{ display: 'inline-block', padding: '10px 24px', borderRadius: 9999, background: 'var(--accent)', color: '#fff', fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700, textDecoration: 'none' }}
-          >Compartilhar agora</Link>
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '12px 28px', borderRadius: 9999,
+              background: 'linear-gradient(135deg, oklch(0.65 0.22 215), var(--accent))',
+              color: '#fff', fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
+              textDecoration: 'none', boxShadow: '0 4px 20px var(--accent-glow)',
+            }}
+          >✦ Compartilhar meu testemunho</Link>
+
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-mute)', marginTop: 16 }}>
+            Sem login obrigatório · pode postar como anônimo
+          </p>
         </div>
       )}
 
