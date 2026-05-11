@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { supabase } from '@/lib/supabase'
 import { extrairYoutubeId } from '@/lib/utils'
 import { CATEGORIAS } from '@/types'
 import SectionHeader from '@/components/layout/Header'
+import { useAuth } from '@/contexts/AuthContext'
 
 const MAX_CHARS = 2000
 const MIN_CHARS = 30
@@ -24,6 +25,7 @@ const INICIAL: FormState = {
 }
 
 export default function NovoTestemunho() {
+  const { user } = useAuth()
   const [form, setForm] = useState<FormState>(INICIAL)
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
@@ -31,6 +33,12 @@ export default function NovoTestemunho() {
   const [erro, setErro] = useState<string | null>(null)
   const [youtubeErro, setYoutubeErro] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const nomeLogado = user?.user_metadata?.nome ?? user?.email?.split('@')[0] ?? ''
+
+  useEffect(() => {
+    if (user && nomeLogado) set('nome', nomeLogado)
+  }, [user, nomeLogado])
 
   const set = (k: keyof FormState, v: string | boolean | File | null) =>
     setForm(p => ({ ...p, [k]: v }))
@@ -49,8 +57,9 @@ export default function NovoTestemunho() {
         .insert({
           titulo: form.titulo.trim(),
           conteudo: form.conteudo.trim(),
-          nome_anonimo: form.anonimo ? null : (form.nome.trim() || null),
-          eh_anonimo: form.anonimo || !form.nome.trim(),
+          usuario_id: (!form.anonimo && user) ? user.id : null,
+          nome_anonimo: (form.anonimo || user) ? null : (form.nome.trim() || null),
+          eh_anonimo: form.anonimo || (!user && !form.nome.trim()),
           categoria: form.categoria || null,
           status: 'pendente',
         })
@@ -108,7 +117,7 @@ export default function NovoTestemunho() {
           </p>
           <button
             onClick={() => setEnviado(false)}
-            style={{ padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#000', fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+            style={{ padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#fff', fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer' }}
           >
             Postar outro
           </button>
@@ -190,14 +199,35 @@ export default function NovoTestemunho() {
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--text-mute)', margin: 0 }}>Opcionais</p>
 
           {/* Nome */}
-          <input
-            type="text"
-            value={form.nome}
-            onChange={e => set('nome', e.target.value)}
-            placeholder="Seu nome (deixe vazio para anônimo)"
-            disabled={form.anonimo}
-            style={{ ...inputStyle, opacity: form.anonimo ? 0.4 : 1 }}
-          />
+          {user && !form.anonimo ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 14px', borderRadius: 8,
+              background: 'var(--accent-glow)', border: '1px solid var(--accent-dim)',
+            }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, #c4b5fd, #818cf8)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 700, color: '#fff',
+              }}>{nomeLogado[0]?.toUpperCase()}</div>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text)', fontWeight: 600 }}>
+                {nomeLogado}
+              </span>
+              <span style={{
+                marginLeft: 'auto', fontSize: 11, fontFamily: 'var(--font-sans)',
+                color: 'var(--accent)', fontWeight: 600, letterSpacing: 0.3,
+              }}>✓ conta verificada</span>
+            </div>
+          ) : !form.anonimo ? (
+            <input
+              type="text"
+              value={form.nome}
+              onChange={e => set('nome', e.target.value)}
+              placeholder="Seu nome (deixe vazio para anônimo)"
+              style={inputStyle}
+            />
+          ) : null}
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
             <input type="checkbox" checked={form.anonimo} onChange={e => set('anonimo', e.target.checked)} style={{ accentColor: 'var(--accent)', width: 16, height: 16 }} />
             <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)' }}>Postar como anônimo</span>
@@ -274,7 +304,7 @@ export default function NovoTestemunho() {
             disabled={enviando || !canSubmit}
             style={{
               padding: '10px 22px', borderRadius: 9999,
-              background: 'var(--accent)', color: '#000',
+              background: 'var(--accent)', color: '#fff',
               fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
               border: 'none', cursor: canSubmit && !enviando ? 'pointer' : 'default',
               opacity: (enviando || !canSubmit) ? 0.5 : 1,

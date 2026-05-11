@@ -1,9 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { type Testemunho, CATEGORIAS } from '@/types'
-import { formatarDataRelativa } from '@/lib/utils'
+import { formatarDataRelativa, getSessionKey } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 
 interface Props { testemunho: Testemunho }
+
+const REACOES = [
+  { tipo: 'amem',   emoji: '🙏', label: 'Amém'   },
+  { tipo: 'orando', emoji: '🕊', label: 'Orando'  },
+  { tipo: 'tocou',  emoji: '💛', label: 'Tocou'   },
+] as const
+
+type TipoReacao = typeof REACOES[number]['tipo']
+
+const STORAGE_KEY = (id: string) => `ev_reacao_${id}`
+
+function lerReacoesLocais(id: string): Set<TipoReacao> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY(id))
+    return new Set((raw ? JSON.parse(raw) : []) as TipoReacao[])
+  } catch { return new Set() }
+}
+
+function salvarReacoesLocais(id: string, set: Set<TipoReacao>) {
+  localStorage.setItem(STORAGE_KEY(id), JSON.stringify([...set]))
+}
 
 function Avatar({ nome, size = 28 }: { nome: string; size?: number }) {
   const letra = nome === 'Anônimo' ? '?' : nome[0].toUpperCase()
@@ -25,20 +47,37 @@ function Avatar({ nome, size = 28 }: { nome: string; size?: number }) {
 
 export default function TestemunhoCard({ testemunho }: Props) {
   const { id, titulo, conteudo, categoria, eh_anonimo, nome_anonimo, criado_em, usuarios } = testemunho
-  const [amens, setAmens] = useState(0)
-  const [amentou, setAmentou] = useState(false)
+  const [reacoes, setReacoes] = useState<Set<TipoReacao>>(() => lerReacoesLocais(id))
   const [copiado, setCopiado] = useState(false)
+
+  useEffect(() => {
+    setReacoes(lerReacoesLocais(id))
+  }, [id])
 
   const nomeRaw = eh_anonimo ? 'Anônimo' : (usuarios?.nome ?? nome_anonimo ?? 'Anônimo')
   const tempo = formatarDataRelativa(criado_em)
   const catLabel = categoria ? CATEGORIAS[categoria] : null
   const url = `${window.location.origin}/testemunho/${id}`
 
-  const handleAmem = (e: React.MouseEvent) => {
+  const handleReacao = async (e: React.MouseEvent, tipo: TipoReacao) => {
     e.preventDefault(); e.stopPropagation()
-    if (amentou) return
-    setAmens(a => a + 1)
-    setAmentou(true)
+    const sk = getSessionKey()
+    const novo = new Set(reacoes)
+
+    if (novo.has(tipo)) {
+      novo.delete(tipo)
+      await supabase.from('reacoes').delete()
+        .eq('testemunho_id', id).eq('tipo', tipo).eq('session_key', sk)
+    } else {
+      novo.add(tipo)
+      await supabase.from('reacoes').upsert(
+        { testemunho_id: id, tipo, session_key: sk },
+        { onConflict: 'testemunho_id,tipo,session_key' }
+      )
+    }
+
+    setReacoes(novo)
+    salvarReacoesLocais(id, novo)
   }
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -74,21 +113,14 @@ export default function TestemunhoCard({ testemunho }: Props) {
         {/* Opening quote mark */}
         <div style={{
           fontFamily: 'Georgia, "Times New Roman", serif',
-          fontSize: 52,
-          lineHeight: 0.7,
-          color: 'var(--accent)',
-          opacity: 0.55,
-          userSelect: 'none',
+          fontSize: 52, lineHeight: 0.7,
+          color: 'var(--accent)', opacity: 0.55, userSelect: 'none',
         }}>"</div>
 
         {/* Content */}
         <p className="line-clamp-5" style={{
-          fontFamily: 'var(--font-sans)',
-          fontSize: 14,
-          lineHeight: 1.65,
-          color: 'var(--text)',
-          margin: 0,
-          flex: 1,
+          fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: 1.65,
+          color: 'var(--text)', margin: 0, flex: 1,
         }}>
           {conteudo}
         </p>
@@ -97,57 +129,73 @@ export default function TestemunhoCard({ testemunho }: Props) {
         {catLabel && (
           <div>
             <span style={{
-              display: 'inline-block',
-              padding: '3px 10px', borderRadius: 9999,
+              display: 'inline-block', padding: '3px 10px', borderRadius: 9999,
               fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600,
-              color: 'var(--accent)',
-              background: 'var(--accent-glow)',
+              color: 'var(--accent)', background: 'var(--accent-glow)',
               border: '1px solid var(--accent-dim)',
               textTransform: 'uppercase', letterSpacing: 0.4,
             }}>{catLabel}</span>
           </div>
         )}
 
-        {/* Author + actions */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-            <Avatar nome={nomeRaw} size={26} />
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: 'var(--text-dim)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {nomeRaw}
-            </span>
-            <span style={{ color: 'var(--text-mute)', fontSize: 12 }}>·</span>
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-mute)', whiteSpace: 'nowrap' }}>
-              {tempo}
-            </span>
+        {/* Author row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Avatar nome={nomeRaw} size={26} />
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {nomeRaw}
+          </span>
+          <span style={{ color: 'var(--text-mute)', fontSize: 12 }}>·</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-mute)', whiteSpace: 'nowrap' }}>
+            {tempo}
+          </span>
+        </div>
+
+        {/* Reactions + share */}
+        <div
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: -4 }}
+          onClick={e => e.preventDefault()}
+        >
+          <div style={{ display: 'flex', gap: 2 }}>
+            {REACOES.map(({ tipo, emoji, label }) => {
+              const ativo = reacoes.has(tipo)
+              return (
+                <button
+                  key={tipo}
+                  onClick={e => handleReacao(e, tipo)}
+                  title={label}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    padding: '5px 9px', borderRadius: 9999, border: 'none',
+                    background: ativo ? 'var(--accent-glow)' : 'transparent',
+                    color: ativo ? 'var(--accent)' : 'var(--text-mute)',
+                    fontFamily: 'var(--font-sans)', fontSize: 13,
+                    cursor: 'pointer', transition: 'background 0.12s, color 0.12s',
+                  }}
+                  onMouseEnter={e => { if (!ativo) (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)' }}
+                  onMouseLeave={e => { if (!ativo) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                >
+                  <span style={{ fontSize: 14 }}>{emoji}</span>
+                  <span style={{ fontSize: 12 }}>{label}</span>
+                </button>
+              )
+            })}
           </div>
 
-          {/* Actions */}
-          <div
-            style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}
-            onClick={e => e.preventDefault()}
+          <button
+            className="action-btn"
+            onClick={handleShare}
+            style={{ color: copiado ? 'var(--accent)' : undefined }}
+            title="Compartilhar"
           >
-            <button
-              className={`action-btn${amentou ? ' active' : ''}`}
-              onClick={handleAmem}
-              style={{ color: amentou ? '#f43f5e' : undefined }}
-              onMouseEnter={e => { if (!amentou) { (e.currentTarget as HTMLElement).style.color = '#f43f5e'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.08)' } }}
-              onMouseLeave={e => { if (!amentou) { (e.currentTarget as HTMLElement).style.color = 'var(--text-mute)'; (e.currentTarget as HTMLElement).style.background = 'transparent' } }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill={amentou ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-              </svg>
-              {amens > 0 && <span style={{ fontSize: 12 }}>{amens}</span>}
-            </button>
-
-            <button className="action-btn" onClick={handleShare}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
-                <polyline points="16 6 12 2 8 6" />
-                <line x1="12" y1="2" x2="12" y2="15" />
-              </svg>
-              {copiado && <span style={{ fontSize: 11 }}>Copiado!</span>}
-            </button>
-          </div>
+            {copiado
+              ? <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)' }}>Copiado!</span>
+              : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+            }
+          </button>
         </div>
       </article>
     </Link>

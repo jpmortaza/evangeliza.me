@@ -10,7 +10,7 @@ async function buscarPorTexto(q: string): Promise<Testemunho[]> {
   if (!q.trim()) return []
   const { data, error } = await supabase
     .from('testemunhos')
-    .select('*, usuarios(nome, slug, avatar_url), midias(*)')
+    .select('*, usuarios!testemunhos_usuario_id_fkey(nome, slug, avatar_url), midias(*)')
     .eq('status', 'aprovado')
     .or(`titulo.ilike.%${q}%,conteudo.ilike.%${q}%`)
     .limit(30)

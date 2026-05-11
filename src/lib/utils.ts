@@ -46,3 +46,10 @@ export function getDisplayId(criado_em: string, id: string): string {
   const num = parseInt(id.replace(/-/g, '').slice(-8), 16) % 10000
   return `T-${year}-${String(num).padStart(4, '0')}`
 }
+
+export function getSessionKey(): string {
+  const KEY = 'ev_sid'
+  let id = localStorage.getItem(KEY)
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem(KEY, id) }
+  return id
+}
