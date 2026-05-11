@@ -1,0 +1,33 @@
+{
+  "name": "evangeliza-me",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.0",
+    "@tanstack/react-query": "^5.75.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-helmet-async": "^2.0.5",
+    "react-router-dom": "^7.6.0",
+    "tailwind-merge": "^3.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.6",
+    "@types/node": "^25.6.2",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.5.0",
+    "tailwindcss": "^4.1.6",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5"
+  }
+}
