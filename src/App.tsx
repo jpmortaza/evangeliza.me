@@ -9,6 +9,13 @@ import Sobre from '@/pages/Sobre'
 import Pesquisar from '@/pages/Pesquisar'
 import Favoritos from '@/pages/Favoritos'
 import Perfil from '@/pages/Perfil'
+import { useAuth } from '@/contexts/AuthContext'
+
+function AdminRoute() {
+  const { isZelador, loading } = useAuth()
+  if (loading) return null
+  return isZelador ? <Admin /> : <Navigate to="/" replace />
+}
 
 export default function App() {
   return (
@@ -28,8 +35,8 @@ export default function App() {
         <Route path="/perfil" element={<Perfil />} />
       </Route>
 
-      {/* Admin — layout proprio */}
-      <Route path="/admin" element={<Admin />} />
+      {/* Admin — protegido, apenas zeladores */}
+      <Route path="/admin" element={<AdminRoute />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

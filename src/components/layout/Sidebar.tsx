@@ -25,17 +25,18 @@ function ShieldIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" f
 function SearchIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" /><path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg> }
 function InfoIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" /><path d="M12 8v1M12 11v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg> }
 
-const NAV = [
+const NAV_BASE = [
   { to: '/', label: 'Feed', Icon: HomeIcon, end: true },
   { to: '/compartilhar', label: 'Novo Testemunho', Icon: PlusIcon, end: false },
   { to: '/pesquisar', label: 'Pesquisar', Icon: SearchIcon, end: false },
   { to: '/favoritos', label: 'Meus Favoritos', Icon: HeartIcon, end: false },
   { to: '/sobre', label: 'Sobre', Icon: InfoIcon, end: false },
-  { to: '/admin', label: 'Admin', Icon: ShieldIcon, end: false },
 ]
 
+const NAV_ADMIN = { to: '/admin', label: 'Admin', Icon: ShieldIcon, end: false }
+
 export default function Sidebar() {
-  const { user, signOut } = useAuth()
+  const { user, isZelador, signOut } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
   const [authMode, setAuthMode] = useState<'entrar' | 'cadastrar'>('entrar')
 
@@ -73,7 +74,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-        {NAV.map(({ to, label, Icon, end }) => (
+        {[...NAV_BASE, ...(isZelador ? [NAV_ADMIN] : [])].map(({ to, label, Icon, end }) => (
           <NavLink key={to} to={to} end={end} style={{ textDecoration: 'none' }}>
             {({ isActive }) => (
               <div
