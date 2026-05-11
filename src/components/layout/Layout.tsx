@@ -27,16 +27,18 @@ export default function Layout() {
         style={{
           flex: 1,
           maxWidth: 'var(--feed-max)',
+          borderLeft: '1px solid var(--border)',
           borderRight: '1px solid var(--border)',
           minHeight: '100vh',
           paddingBottom: 80,
+          background: 'var(--bg)',
         }}
       >
         <Outlet />
       </main>
 
-      {/* Right column spacer — desktop only (optional future use) */}
-      <div className="hidden lg:block" style={{ width: 350, flexShrink: 0 }} />
+      {/* Right column spacer */}
+      <div className="hidden lg:block" style={{ width: 300, flexShrink: 0 }} />
 
       {/* Bottom nav — mobile only */}
       <BottomNav />

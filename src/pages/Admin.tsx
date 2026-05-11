@@ -45,7 +45,7 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
-      <div style={{ width: '100%', maxWidth: 360, border: '1px solid var(--border)', padding: 32 }}>
+      <div style={{ width: '100%', maxWidth: 360, border: '1px solid var(--border)', borderRadius: 16, background: 'var(--bg-elev)', padding: 32, boxShadow: 'var(--shadow)' }}>
         <div style={{ marginBottom: 32 }}>
           <p style={{ ...MONO, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: 'var(--text-mute)', marginBottom: 12 }}>PAINEL · /ADMIN</p>
           <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 24, fontWeight: 500, color: 'var(--text)', margin: 0 }}>Zeladores</h1>
@@ -292,7 +292,7 @@ export default function Admin() {
       {/* Top nav */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 20,
-        background: 'oklch(0.07 0.022 265 / 0.92)',
+        background: 'rgba(245,247,255,0.95)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border)',

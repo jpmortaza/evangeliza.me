@@ -5,15 +5,15 @@ export default function SectionHeader({ title, subtitle, action }: { title: stri
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 10,
-      background: 'rgba(0,0,0,0.85)',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
+      background: 'rgba(245,247,255,0.9)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
       borderBottom: '1px solid var(--border)',
-      padding: '14px 16px',
+      padding: '12px 16px',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     }}>
       <div>
-        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 17, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
           {title}
         </h1>
         {subtitle && (
