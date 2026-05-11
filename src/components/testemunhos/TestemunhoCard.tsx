@@ -1,71 +1,79 @@
 import { Link } from 'react-router-dom'
 import { type Testemunho, CATEGORIAS } from '@/types'
-import { formatarDataRelativa, truncar } from '@/lib/utils'
+import { formatarDataRelativa, truncar, getDisplayId } from '@/lib/utils'
 import BotoesCompartilhar from '@/components/compartilhamento/BotoesCompartilhar'
-import YouTubeEmbed from './YouTubeEmbed'
 
 interface Props {
   testemunho: Testemunho
 }
 
+const MONO: React.CSSProperties = { fontFamily: '"Geist Mono", monospace' }
+
 export default function TestemunhoCard({ testemunho }: Props) {
   const { id, titulo, conteudo, categoria, eh_anonimo, nome_anonimo, criado_em, usuarios, midias } = testemunho
 
-  const autor = eh_anonimo ? 'Anônimo' : (usuarios?.nome ?? nome_anonimo ?? 'Anônimo')
+  const autor = eh_anonimo ? 'ANÔNIMO' : (usuarios?.nome ?? nome_anonimo ?? 'ANÔNIMO').toUpperCase()
   const midia = midias?.[0]
   const url = `${window.location.origin}/testemunho/${id}`
+  const displayId = getDisplayId(criado_em, id)
+  const catLabel = categoria ? CATEGORIAS[categoria].toUpperCase() : null
+  const tempo = formatarDataRelativa(criado_em).toUpperCase()
 
   return (
-    <article className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-      {midia?.tipo === 'youtube' && (
-        <div className="w-full">
-          <YouTubeEmbed videoId={midia.url} title={titulo} />
-        </div>
-      )}
+    <article className="border-t py-5 group" style={{ borderColor: '#2a2a2a' }}>
+      {/* Meta row */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-[11px]" style={{ ...MONO, color: '#e8b84b' }}>{displayId}</span>
+        {catLabel && (
+          <>
+            <span style={{ color: '#333' }}>·</span>
+            <span
+              className="text-[10px] px-1.5 py-px border"
+              style={{ ...MONO, color: '#888', borderColor: '#2a2a2a' }}
+            >
+              {catLabel}
+            </span>
+          </>
+        )}
+        <span style={{ color: '#333' }}>·</span>
+        <span className="text-[10px]" style={{ ...MONO, color: '#444' }}>{tempo}</span>
+      </div>
+
+      {/* Thumbnail */}
       {midia?.tipo === 'imagem' && (
         <img
           src={midia.url}
           alt={titulo}
-          className="w-full h-48 object-cover"
+          className="w-full h-40 object-cover mb-3"
+          style={{ borderColor: '#2a2a2a' }}
           loading="lazy"
         />
       )}
 
-      <div className="p-5">
-        {categoria && (
-          <span
-            className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-3 text-white"
-            style={{ backgroundColor: '#1E3A5F' }}
+      {/* Title */}
+      <h2 className="text-xl font-bold text-white leading-tight mb-2">
+        <Link to={`/testemunho/${id}`} className="hover:text-[#e8b84b] transition-colors">
+          {titulo}
+        </Link>
+      </h2>
+
+      {/* Preview */}
+      <p className="text-sm leading-relaxed mb-4 line-clamp-3" style={{ color: '#888' }}>
+        {truncar(conteudo, 200)}
+      </p>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px]" style={{ ...MONO, color: '#444' }}>{autor}</span>
+        <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <BotoesCompartilhar titulo={titulo} conteudo={conteudo} url={url} />
+          <Link
+            to={`/testemunho/${id}`}
+            className="text-[10px] tracking-widest transition-colors hover:text-white"
+            style={{ ...MONO, color: '#555' }}
           >
-            {CATEGORIAS[categoria]}
-          </span>
-        )}
-
-        <h2 className="text-xl font-semibold leading-snug mb-2 text-gray-900" style={{ fontFamily: "'Lora', serif" }}>
-          <Link to={`/testemunho/${id}`} className="hover:underline decoration-[#C9933B]">
-            {titulo}
+            LER →
           </Link>
-        </h2>
-
-        <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-4">
-          {truncar(conteudo, 220)}
-        </p>
-
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <span className="text-xs text-gray-400">
-            <strong className="text-gray-500">{autor}</strong> · {formatarDataRelativa(criado_em)}
-          </span>
-
-          <div className="flex items-center gap-3">
-            <BotoesCompartilhar titulo={titulo} conteudo={conteudo} url={url} />
-            <Link
-              to={`/testemunho/${id}`}
-              className="text-xs font-semibold transition-colors"
-              style={{ color: '#C9933B' }}
-            >
-              Ler →
-            </Link>
-          </div>
         </div>
       </div>
     </article>

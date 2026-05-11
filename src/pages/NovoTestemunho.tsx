@@ -1,9 +1,12 @@
 import { useState, useRef } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { Upload, X, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { extrairYoutubeId } from '@/lib/utils'
 import { CATEGORIAS } from '@/types'
+
+const MONO: React.CSSProperties = { fontFamily: '"Geist Mono", monospace' }
+const MAX_CHARS = 2000
+const MIN_CHARS = 30
 
 interface FormState {
   titulo: string
@@ -15,137 +18,115 @@ interface FormState {
   foto: File | null
 }
 
-const inicial: FormState = {
-  titulo: '',
-  conteudo: '',
-  nome: '',
-  anonimo: false,
-  categoria: '',
-  youtubeUrl: '',
-  foto: null,
+const INICIAL: FormState = {
+  titulo: '', conteudo: '', nome: '', anonimo: false,
+  categoria: '', youtubeUrl: '', foto: null,
+}
+
+function Campo({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return (
+    <div>
+      <div className="mb-2">
+        <span className="text-[10px] tracking-widest" style={{ ...MONO, color: '#555' }}>{label}</span>
+      </div>
+      {children}
+      {hint && <p className="mt-1.5 text-[10px]" style={{ ...MONO, color: '#444' }}>{hint}</p>}
+    </div>
+  )
 }
 
 export default function NovoTestemunho() {
-  const [form, setForm] = useState<FormState>(inicial)
+  const [form, setForm] = useState<FormState>(INICIAL)
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const [erroYoutube, setErroYoutube] = useState(false)
+  const [youtubeErro, setYoutubeErro] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const set = (field: keyof FormState, value: string | boolean | File | null) =>
-    setForm(prev => ({ ...prev, [field]: value }))
+  const set = (k: keyof FormState, v: string | boolean | File | null) =>
+    setForm(p => ({ ...p, [k]: v }))
 
-  const validarYoutube = (url: string) => {
-    if (!url) { setErroYoutube(false); return }
-    setErroYoutube(!extrairYoutubeId(url))
-  }
-
-  const handleFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 10 * 1024 * 1024) { setErro('A foto deve ter no máximo 10 MB.'); return }
-    set('foto', file)
-    set('youtubeUrl', '')
-  }
-
-  const removerMidia = () => {
-    set('foto', null)
-    set('youtubeUrl', '')
-    if (fileRef.current) fileRef.current.value = ''
-  }
+  const charCount = form.conteudo.length
+  const pct = Math.min((charCount / MAX_CHARS) * 100, 100)
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault()
     setErro(null)
-
-    if (form.titulo.trim().length < 5) { setErro('O título precisa ter pelo menos 5 caracteres.'); return }
-    if (form.conteudo.trim().length < 50) { setErro('O testemunho precisa ter pelo menos 50 caracteres.'); return }
-    if (form.youtubeUrl && erroYoutube) { setErro('URL do YouTube inválida.'); return }
+    if (form.titulo.trim().length < 5) { setErro('TÍTULO: mínimo 5 caracteres.'); return }
+    if (charCount < MIN_CHARS) { setErro(`TESTEMUNHO: mínimo ${MIN_CHARS} caracteres.`); return }
+    if (form.youtubeUrl && youtubeErro) { setErro('URL DO YOUTUBE INVÁLIDA.'); return }
 
     setEnviando(true)
-
     try {
-      const payload = {
-        titulo: form.titulo.trim(),
-        conteudo: form.conteudo.trim(),
-        nome_anonimo: form.anonimo ? null : (form.nome.trim() || null),
-        eh_anonimo: form.anonimo || !form.nome.trim(),
-        categoria: form.categoria || null,
-        status: 'pendente',
-      }
-
-      const { data: testemunho, error: erroDB } = await supabase
+      const { data: t, error: dbErr } = await supabase
         .from('testemunhos')
-        .insert(payload)
+        .insert({
+          titulo: form.titulo.trim(),
+          conteudo: form.conteudo.trim(),
+          nome_anonimo: form.anonimo ? null : (form.nome.trim() || null),
+          eh_anonimo: form.anonimo || !form.nome.trim(),
+          categoria: form.categoria || null,
+          status: 'pendente',
+        })
         .select('id')
         .single()
 
-      if (erroDB) throw new Error(erroDB.message)
+      if (dbErr) throw new Error(dbErr.message)
 
-      const testemunhoId = testemunho.id
-
-      // Mídia: YouTube
       if (form.youtubeUrl) {
         const videoId = extrairYoutubeId(form.youtubeUrl)
         if (videoId) {
-          await supabase.from('midias').insert({
-            testemunho_id: testemunhoId,
-            tipo: 'youtube',
-            url: videoId,
-            ordem: 0,
-          })
+          await supabase.from('midias').insert({ testemunho_id: t.id, tipo: 'youtube', url: videoId, ordem: 0 })
         }
       }
 
-      // Mídia: foto
       if (form.foto) {
         const ext = form.foto.name.split('.').pop() ?? 'jpg'
-        const path = `imagens/${testemunhoId}/${crypto.randomUUID()}.${ext}`
-        const { error: errUpload } = await supabase.storage
-          .from('testemunhos-midia')
-          .upload(path, form.foto)
-
-        if (!errUpload) {
-          const { data: urlData } = supabase.storage
-            .from('testemunhos-midia')
-            .getPublicUrl(path)
-
-          await supabase.from('midias').insert({
-            testemunho_id: testemunhoId,
-            tipo: 'imagem',
-            url: urlData.publicUrl,
-            ordem: 0,
-          })
+        const path = `imagens/${t.id}/${crypto.randomUUID()}.${ext}`
+        const { error: upErr } = await supabase.storage.from('testemunhos-midia').upload(path, form.foto)
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from('testemunhos-midia').getPublicUrl(path)
+          await supabase.from('midias').insert({ testemunho_id: t.id, tipo: 'imagem', url: urlData.publicUrl, ordem: 0 })
         }
       }
 
       setEnviado(true)
-      setForm(inicial)
+      setForm(INICIAL)
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Erro ao enviar. Tente novamente.')
+      setErro(e instanceof Error ? e.message : 'ERRO AO ENVIAR. TENTE NOVAMENTE.')
     } finally {
       setEnviando(false)
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    background: 'transparent',
+    border: '1px solid #2a2a2a',
+    color: '#fff',
+    padding: '12px 14px',
+    fontSize: '14px',
+    fontFamily: '"Geist", sans-serif',
+    transition: 'border-color 0.15s',
+  }
+
   if (enviado) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-20 text-center">
-        <CheckCircle className="w-16 h-16 mx-auto mb-6" style={{ color: '#1E3A5F' }} />
-        <h2 className="text-2xl font-bold mb-3 text-gray-900" style={{ fontFamily: "'Lora', serif" }}>
-          Recebemos seu testemunho 🙏
-        </h2>
-        <p className="text-gray-600 mb-8">
-          Ele será revisado pelos nossos Zeladores e publicado em breve.
-          Obrigado por compartilhar como Deus agiu na sua vida.
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+        <div className="mb-8">
+          <span className="text-6xl" style={{ color: '#e8b84b' }}>+</span>
+        </div>
+        <p className="text-[10px] tracking-widest mb-4" style={{ ...MONO, color: '#555' }}>REGISTRO RECEBIDO</p>
+        <h2 className="text-3xl font-bold text-white mb-4">Obrigado.</h2>
+        <p className="text-base leading-relaxed mb-8" style={{ color: '#888' }}>
+          Seu testemunho foi recebido e será revisado pelos Zeladores antes de ser publicado.
         </p>
         <button
           onClick={() => setEnviado(false)}
-          className="font-semibold px-6 py-3 rounded-xl text-white transition-colors"
-          style={{ backgroundColor: '#C9933B' }}
+          className="text-sm font-bold px-6 py-3 transition-opacity hover:opacity-80"
+          style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}
         >
-          Compartilhar outro testemunho
+          + COMPARTILHAR OUTRO
         </button>
       </div>
     )
@@ -153,173 +134,186 @@ export default function NovoTestemunho() {
 
   return (
     <>
-      <Helmet>
-        <title>Compartilhar testemunho — evangeliza.me</title>
-      </Helmet>
+      <Helmet><title>Postar — evangeliza.me</title></Helmet>
 
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3" style={{ fontFamily: "'Lora', serif" }}>
-            Conte o que Deus fez na sua vida
-          </h1>
-          <p className="text-gray-500">
-            Sem cadastro. Seu testemunho será revisado e publicado para inspirar outras pessoas.
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        {/* Header */}
+        <div className="mb-10">
+          <p className="text-[10px] tracking-widest mb-4" style={{ ...MONO, color: '#555' }}>
+            FORMULÁRIO · /POSTAR
           </p>
+
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2 leading-tight">
+                O que Deus fez<br />na sua vida?
+              </h1>
+              <p className="text-sm" style={{ color: '#888' }}>
+                Sem cadastro, sem email, sem captcha. Você escreve, a gente publica.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="dot-live" style={{ color: '#e8b84b', fontSize: 8 }}>●</span>
+              <span className="text-[10px] tracking-widest" style={{ ...MONO, color: '#555' }}>
+                TEMPO MÉDIO · 57 S
+              </span>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={enviar} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
-
+        <form onSubmit={enviar} className="space-y-6">
           {/* Título */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Título <span className="text-red-400">*</span>
-            </label>
+          <Campo label="TÍTULO · OBRIGATÓRIO">
             <input
               type="text"
               value={form.titulo}
               onChange={e => set('titulo', e.target.value)}
-              placeholder="Ex: Deus curou minha mãe quando os médicos não tinham mais esperança"
+              placeholder="Em poucas palavras, o que aconteceu?"
               maxLength={150}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': '#1E3A5F' } as React.CSSProperties}
-              onFocus={e => (e.target.style.boxShadow = '0 0 0 2px #1E3A5F')}
-              onBlur={e => (e.target.style.boxShadow = '')}
+              style={inputStyle}
               required
             />
-            <p className="text-xs text-gray-400 mt-1 text-right">{form.titulo.length}/150</p>
-          </div>
+          </Campo>
 
-          {/* Conteúdo */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Sua história <span className="text-red-400">*</span>
-            </label>
+          {/* Testemunho */}
+          <Campo label="TESTEMUNHO · OBRIGATÓRIO">
             <textarea
               value={form.conteudo}
-              onChange={e => set('conteudo', e.target.value)}
-              placeholder="Escreva com suas próprias palavras. Não precisa ser perfeito — só precisa ser verdadeiro."
-              rows={8}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm resize-y focus:outline-none"
-              onFocus={e => (e.target.style.boxShadow = '0 0 0 2px #1E3A5F')}
-              onBlur={e => (e.target.style.boxShadow = '')}
+              onChange={e => set('conteudo', e.target.value.slice(0, MAX_CHARS))}
+              placeholder="Comece pelo momento. Onde você estava, o que tinha acabado de acontecer, o que você sentiu…"
+              rows={10}
+              style={{ ...inputStyle, resize: 'vertical' }}
               required
             />
-            <p className="text-xs text-gray-400 mt-1">{form.conteudo.length} caracteres (mínimo 50)</p>
-          </div>
-
-          {/* Nome + Anônimo */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Seu nome <span className="text-gray-400 font-normal">(opcional)</span>
-            </label>
-            <input
-              type="text"
-              value={form.nome}
-              onChange={e => set('nome', e.target.value)}
-              placeholder="Deixe vazio para aparecer como Anônimo"
-              disabled={form.anonimo}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm disabled:bg-gray-50 disabled:text-gray-400 focus:outline-none"
-              onFocus={e => (e.target.style.boxShadow = '0 0 0 2px #1E3A5F')}
-              onBlur={e => (e.target.style.boxShadow = '')}
-            />
-            <label className="flex items-center gap-2 mt-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.anonimo}
-                onChange={e => set('anonimo', e.target.checked)}
-                className="rounded"
-              />
-              <span className="text-sm text-gray-600">Quero postar como Anônimo</span>
-            </label>
-          </div>
-
-          {/* Categoria */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Categoria <span className="text-gray-400 font-normal">(opcional)</span>
-            </label>
-            <select
-              value={form.categoria}
-              onChange={e => set('categoria', e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-white focus:outline-none"
-              onFocus={e => (e.target.style.boxShadow = '0 0 0 2px #1E3A5F')}
-              onBlur={e => (e.target.style.boxShadow = '')}
-            >
-              <option value="">Selecionar categoria...</option>
-              {Object.entries(CATEGORIAS).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Mídia */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Mídia <span className="text-gray-400 font-normal">(opcional — foto ou vídeo do YouTube)</span>
-            </label>
-
-            {!form.foto && !form.youtubeUrl && (
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 border border-dashed border-gray-300 rounded-lg px-4 py-3 cursor-pointer hover:border-gray-400 transition-colors">
-                  <Upload className="w-4 h-4 text-gray-400 shrink-0" />
-                  <span className="text-sm text-gray-500">Escolher uma foto (JPG, PNG, WebP — máx 10 MB)</span>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={handleFoto}
-                  />
-                </label>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-xs text-gray-400">ou</span>
-                  <div className="flex-1 h-px bg-gray-200" />
-                </div>
-
-                <input
-                  type="url"
-                  value={form.youtubeUrl}
-                  onChange={e => { set('youtubeUrl', e.target.value); validarYoutube(e.target.value) }}
-                  placeholder="URL do YouTube (ex: https://youtu.be/...)"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none"
-                  onFocus={e => (e.target.style.boxShadow = '0 0 0 2px #1E3A5F')}
-                  onBlur={e => (e.target.style.boxShadow = '')}
-                />
-                {erroYoutube && <p className="text-xs text-red-500">URL do YouTube inválida.</p>}
-              </div>
-            )}
-
-            {(form.foto || form.youtubeUrl) && (
-              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-4 py-3 bg-gray-50">
-                <span className="text-sm text-gray-600 truncate">
-                  {form.foto ? form.foto.name : form.youtubeUrl}
-                </span>
-                <button type="button" onClick={removerMidia} className="ml-2 text-gray-400 hover:text-red-500 transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {erro && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
-              {erro}
+            {/* Counter + bar */}
+            <div className="mt-1.5 flex items-center justify-between gap-4">
+              <span className="text-[10px]" style={{ ...MONO, color: '#444' }}>
+                min. {MIN_CHARS} caracteres
+              </span>
+              <span
+                className="text-[10px]"
+                style={{ ...MONO, color: charCount >= MIN_CHARS ? '#e8b84b' : '#555' }}
+              >
+                {charCount} / {MAX_CHARS}
+              </span>
             </div>
+            <div className="mt-1 h-px w-full" style={{ backgroundColor: '#1e1e1e' }}>
+              <div
+                className="h-px transition-all"
+                style={{ width: `${pct}%`, backgroundColor: charCount >= MIN_CHARS ? '#e8b84b' : '#333' }}
+              />
+            </div>
+          </Campo>
+
+          {/* Hint */}
+          <p className="text-[11px] leading-relaxed" style={{ ...MONO, color: '#444' }}>
+            Conte como foi. Não precisa de jargão religioso. Sua voz vale mais que vocabulário bonito.
+          </p>
+
+          {/* Opcionais */}
+          <div className="border-t pt-6 space-y-5" style={{ borderColor: '#1e1e1e' }}>
+            <p className="text-[10px] tracking-widest" style={{ ...MONO, color: '#333' }}>
+              OPCIONAIS
+            </p>
+
+            {/* Nome */}
+            <Campo label="SEU NOME · OPCIONAL">
+              <input
+                type="text"
+                value={form.nome}
+                onChange={e => set('nome', e.target.value)}
+                placeholder="Deixe vazio para aparecer como Anônimo"
+                disabled={form.anonimo}
+                style={{ ...inputStyle, opacity: form.anonimo ? 0.3 : 1 }}
+              />
+              <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.anonimo}
+                  onChange={e => set('anonimo', e.target.checked)}
+                  style={{ accentColor: '#e8b84b' }}
+                />
+                <span className="text-[11px]" style={{ ...MONO, color: '#555' }}>
+                  POSTAR COMO ANÔNIMO
+                </span>
+              </label>
+            </Campo>
+
+            {/* Categoria */}
+            <Campo label="CATEGORIA · OPCIONAL">
+              <select
+                value={form.categoria}
+                onChange={e => set('categoria', e.target.value)}
+                style={{ ...inputStyle, cursor: 'pointer' }}
+              >
+                <option value="" style={{ backgroundColor: '#141414' }}>Selecionar…</option>
+                {Object.entries(CATEGORIAS).map(([k, v]) => (
+                  <option key={k} value={k} style={{ backgroundColor: '#141414' }}>{v}</option>
+                ))}
+              </select>
+            </Campo>
+
+            {/* YouTube */}
+            <Campo label="URL DO YOUTUBE · OPCIONAL" hint="Cole a URL de um vídeo relacionado ao seu testemunho.">
+              <input
+                type="url"
+                value={form.youtubeUrl}
+                onChange={e => {
+                  set('youtubeUrl', e.target.value)
+                  if (e.target.value) setYoutubeErro(!extrairYoutubeId(e.target.value))
+                  else setYoutubeErro(false)
+                }}
+                placeholder="https://youtu.be/..."
+                style={{ ...inputStyle, borderColor: youtubeErro ? '#ef4444' : '#2a2a2a' }}
+              />
+              {youtubeErro && (
+                <p className="mt-1 text-[10px]" style={{ ...MONO, color: '#ef4444' }}>URL INVÁLIDA</p>
+              )}
+            </Campo>
+
+            {/* Foto */}
+            <Campo label="FOTO · OPCIONAL" hint="JPG, PNG, WebP — máx. 10 MB">
+              <label
+                className="flex items-center gap-3 px-4 py-3 border cursor-pointer transition-colors hover:border-[#555]"
+                style={{ borderColor: '#2a2a2a' }}
+              >
+                <span className="text-[11px] tracking-widest" style={{ ...MONO, color: '#555' }}>
+                  {form.foto ? form.foto.name : '+ ESCOLHER ARQUIVO'}
+                </span>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={e => {
+                    const f = e.target.files?.[0]
+                    if (f && f.size <= 10 * 1024 * 1024) set('foto', f)
+                    else if (f) setErro('FOTO: máximo 10 MB.')
+                  }}
+                />
+              </label>
+            </Campo>
+          </div>
+
+          {/* Erro */}
+          {erro && (
+            <p className="text-[11px] px-3 py-2 border" style={{ ...MONO, color: '#ef4444', borderColor: '#ef444430' }}>
+              {erro}
+            </p>
           )}
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={enviando}
-            className="w-full py-4 rounded-xl text-white font-semibold text-base transition-opacity disabled:opacity-60"
-            style={{ backgroundColor: '#1E3A5F' }}
+            className="w-full py-4 text-sm font-bold tracking-widest transition-opacity hover:opacity-90 disabled:opacity-40"
+            style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}
           >
-            {enviando ? 'Enviando...' : 'Compartilhar meu testemunho 🙏'}
+            {enviando ? 'ENVIANDO…' : '+ PUBLICAR TESTEMUNHO'}
           </button>
 
-          <p className="text-xs text-gray-400 text-center">
-            Seu testemunho será revisado pelos Zeladores antes de ser publicado.
+          <p className="text-center text-[10px]" style={{ ...MONO, color: '#333' }}>
+            REVISADO PELOS ZELADORES ANTES DE PUBLICAR
           </p>
         </form>
       </div>

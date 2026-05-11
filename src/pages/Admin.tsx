@@ -1,32 +1,29 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Helmet } from 'react-helmet-async'
-import { CheckCircle, XCircle, LogIn, Shield } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { type Testemunho } from '@/types'
-import { formatarDataRelativa } from '@/lib/utils'
+import { type Testemunho, CATEGORIAS } from '@/types'
+import { formatarDataRelativa, getDisplayId } from '@/lib/utils'
+
+const MONO: React.CSSProperties = { fontFamily: '"Geist Mono", monospace' }
+
+type Aba = 'pendentes' | 'aprovados' | 'denunciados'
 
 async function verificarZelador(email: string): Promise<boolean> {
   const { data } = await supabase
-    .from('zeladores')
-    .select('id')
-    .eq('email', email)
-    .eq('ativo', true)
-    .maybeSingle()
+    .from('zeladores').select('id').eq('email', email).eq('ativo', true).maybeSingle()
   return !!data
 }
 
-async function buscarPendentes(): Promise<Testemunho[]> {
+async function buscarTestemunhos(status: string): Promise<Testemunho[]> {
   const { data, error } = await supabase
-    .from('testemunhos')
-    .select('*, midias(*)')
-    .eq('status', 'pendente')
+    .from('testemunhos').select('*, midias(*)').eq('status', status)
     .order('criado_em', { ascending: true })
-
   if (error) throw error
   return data as Testemunho[]
 }
 
+/* ── Login ───────────────────────────────────── */
 function LoginForm({ onLogin }: { onLogin: () => void }) {
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
@@ -34,50 +31,36 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
   const [loading, setLoading] = useState(false)
 
   const entrar = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErro('')
-    setLoading(true)
+    e.preventDefault(); setErro(''); setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
-    if (error) setErro('Email ou senha inválidos.')
+    if (error) setErro('CREDENCIAIS INVÁLIDAS')
     else onLogin()
     setLoading(false)
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Shield className="w-10 h-10 mx-auto mb-3" style={{ color: '#1E3A5F' }} />
-          <h1 className="text-xl font-bold text-gray-900">Painel dos Zeladores</h1>
-          <p className="text-sm text-gray-500 mt-1">Acesso restrito</p>
-        </div>
+  const inputStyle: React.CSSProperties = {
+    width: '100%', background: 'transparent', border: '1px solid #2a2a2a',
+    color: '#fff', padding: '12px 14px', fontSize: '14px', fontFamily: '"Geist", sans-serif',
+  }
 
-        <form onSubmit={entrar} className="space-y-4">
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="Email"
-            className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
-            required
-          />
-          <input
-            type="password"
-            value={senha}
-            onChange={e => setSenha(e.target.value)}
-            placeholder="Senha"
-            className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
-            required
-          />
-          {erro && <p className="text-sm text-red-500">{erro}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl text-white font-semibold text-sm disabled:opacity-60 flex items-center justify-center gap-2"
-            style={{ backgroundColor: '#1E3A5F' }}
-          >
-            <LogIn className="w-4 h-4" />
-            {loading ? 'Entrando...' : 'Entrar'}
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#0a0a0a' }}>
+      <div className="w-full max-w-sm border p-8" style={{ borderColor: '#2a2a2a' }}>
+        <div className="mb-8">
+          <p className="text-[10px] tracking-widest mb-3" style={{ ...MONO, color: '#555' }}>PAINEL · /ADMIN</p>
+          <h1 className="text-2xl font-bold text-white">Zeladores</h1>
+          <p className="text-sm mt-1" style={{ color: '#555' }}>Acesso restrito</p>
+        </div>
+        <form onSubmit={entrar} className="space-y-3">
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="email" style={inputStyle} required />
+          <input type="password" value={senha} onChange={e => setSenha(e.target.value)}
+            placeholder="senha" style={inputStyle} required />
+          {erro && <p className="text-[11px]" style={{ ...MONO, color: '#ef4444' }}>{erro}</p>}
+          <button type="submit" disabled={loading}
+            className="w-full py-3 text-sm font-bold tracking-widest disabled:opacity-40"
+            style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}>
+            {loading ? 'ENTRANDO…' : '+ ENTRAR'}
           </button>
         </form>
       </div>
@@ -85,93 +68,109 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
   )
 }
 
-function CartaoTestemunho({
-  t,
-  onAprovar,
-  onRejeitar,
-}: {
+/* ── Item de testemunho ──────────────────────── */
+function ItemTestemunho({ t, onAprovar, onRejeitar }: {
   t: Testemunho
   onAprovar: () => void
-  onRejeitar: (motivo: string) => void
+  onRejeitar: (m: string) => void
 }) {
-  const [rejeitando, setRejeitando] = useState(false)
+  const [rejMode, setRejMode] = useState(false)
   const [motivo, setMotivo] = useState('')
-
-  const autor = t.eh_anonimo ? 'Anônimo' : (t.nome_anonimo ?? 'Anônimo')
+  const displayId = getDisplayId(t.criado_em, t.id)
+  const autor = t.eh_anonimo ? 'ANÔNIMO' : (t.nome_anonimo ?? 'ANÔNIMO').toUpperCase()
+  const cat = t.categoria ? CATEGORIAS[t.categoria].toUpperCase() : null
+  const tempo = formatarDataRelativa(t.criado_em).toUpperCase()
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <div>
-          <h3 className="font-semibold text-gray-900 leading-snug">{t.titulo}</h3>
-          <p className="text-xs text-gray-400 mt-1">
-            {autor} · {formatarDataRelativa(t.criado_em)}
-            {t.categoria && ` · ${t.categoria}`}
-          </p>
-        </div>
+    <article className="border-t py-5" style={{ borderColor: '#2a2a2a' }}>
+      {/* Meta */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className="text-[11px]" style={{ ...MONO, color: '#e8b84b' }}>{displayId}</span>
+        {cat && (
+          <>
+            <span style={{ color: '#333' }}>·</span>
+            <span className="text-[10px] px-1.5 py-px border" style={{ ...MONO, color: '#888', borderColor: '#2a2a2a' }}>
+              {cat}
+            </span>
+          </>
+        )}
+        <span style={{ color: '#333' }}>·</span>
+        <span className="text-[10px]" style={{ ...MONO, color: '#444' }}>{tempo}</span>
       </div>
 
-      <p className="text-sm text-gray-600 leading-relaxed mb-5 whitespace-pre-line">
+      {/* Title */}
+      <h3 className="text-xl font-bold text-white mb-2">{t.titulo}</h3>
+
+      {/* Content */}
+      <p className="text-sm leading-relaxed mb-3 whitespace-pre-line" style={{ color: '#888' }}>
         {t.conteudo}
       </p>
 
-      {t.midias && t.midias.length > 0 && (
-        <div className="mb-4 text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
-          Tem mídia: {t.midias.map(m => m.tipo).join(', ')}
-        </div>
-      )}
+      {/* Author */}
+      <p className="text-[10px] mb-4" style={{ ...MONO, color: '#444' }}>{autor}</p>
 
-      {!rejeitando ? (
+      {/* Actions */}
+      {!rejMode ? (
         <div className="flex items-center gap-3">
           <button
             onClick={onAprovar}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
-            style={{ backgroundColor: '#1E3A5F' }}
+            className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-bold tracking-widest transition-opacity hover:opacity-80"
+            style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}
           >
-            <CheckCircle className="w-4 h-4" />
-            Aprovar
+            + APROVAR
           </button>
           <button
-            onClick={() => setRejeitando(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 border border-gray-200 hover:border-red-300 hover:text-red-600 transition-colors"
+            onClick={() => setRejMode(true)}
+            className="px-4 py-2 text-[11px] border tracking-widest transition-colors hover:border-[#555]"
+            style={{ ...MONO, color: '#888', borderColor: '#2a2a2a' }}
           >
-            <XCircle className="w-4 h-4" />
-            Rejeitar
+            REJEITAR
+          </button>
+          <button
+            className="text-[10px] tracking-widest transition-colors hover:text-white"
+            style={{ ...MONO, color: '#333' }}
+          >
+            MARCAR P/ REVISÃO
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <textarea
             value={motivo}
             onChange={e => setMotivo(e.target.value)}
-            placeholder="Motivo da rejeição (opcional, vai para o arquivo)"
+            placeholder="Motivo da rejeição (opcional)"
             rows={2}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-300"
+            className="w-full px-3 py-2 text-sm border"
+            style={{ background: 'transparent', borderColor: '#2a2a2a', color: '#fff', fontFamily: '"Geist", sans-serif' }}
           />
           <div className="flex gap-2">
             <button
               onClick={() => onRejeitar(motivo)}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+              className="px-4 py-2 text-[11px] font-bold"
+              style={{ ...MONO, backgroundColor: '#ef4444', color: '#fff' }}
             >
-              Confirmar rejeição
+              CONFIRMAR REJEIÇÃO
             </button>
             <button
-              onClick={() => { setRejeitando(false); setMotivo('') }}
-              className="px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-700"
+              onClick={() => { setRejMode(false); setMotivo('') }}
+              className="px-4 py-2 text-[11px]"
+              style={{ ...MONO, color: '#555' }}
             >
-              Cancelar
+              CANCELAR
             </button>
           </div>
         </div>
       )}
-    </div>
+    </article>
   )
 }
 
+/* ── Página Admin ────────────────────────────── */
 export default function Admin() {
   const [sessao, setSessao] = useState<{ email: string } | null>(null)
   const [ehZelador, setEhZelador] = useState<boolean | null>(null)
   const [verificando, setVerificando] = useState(true)
+  const [aba, setAba] = useState<Aba>('pendentes')
   const qc = useQueryClient()
 
   useEffect(() => {
@@ -179,51 +178,58 @@ export default function Admin() {
       const user = data.session?.user
       if (!user?.email) { setVerificando(false); return }
       setSessao({ email: user.email })
-      const ok = await verificarZelador(user.email)
-      setEhZelador(ok)
+      setEhZelador(await verificarZelador(user.email))
       setVerificando(false)
     })
   }, [])
 
-  const { data: pendentes = [], isLoading } = useQuery({
-    queryKey: ['pendentes'],
-    queryFn: buscarPendentes,
+  const statusMap: Record<Aba, string> = {
+    pendentes: 'pendente', aprovados: 'aprovado', denunciados: 'rejeitado',
+  }
+
+  const { data: itens = [], isLoading } = useQuery({
+    queryKey: ['admin-testemunhos', aba],
+    queryFn: () => buscarTestemunhos(statusMap[aba]),
     enabled: ehZelador === true,
     refetchInterval: 30_000,
   })
 
   const moderar = useMutation({
     mutationFn: async ({ id, status, motivo }: { id: string; status: string; motivo?: string }) => {
-      const { error } = await supabase
-        .from('testemunhos')
-        .update({ status, motivo_rejeicao: motivo ?? null, aprovado_em: status === 'aprovado' ? new Date().toISOString() : null })
-        .eq('id', id)
+      const { error } = await supabase.from('testemunhos').update({
+        status,
+        motivo_rejeicao: motivo ?? null,
+        aprovado_em: status === 'aprovado' ? new Date().toISOString() : null,
+      }).eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['pendentes'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-testemunhos'] })
+      qc.invalidateQueries({ queryKey: ['testemunhos'] })
+    },
   })
 
   if (verificando) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-400">Verificando acesso...</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
+        <p className="text-[11px] tracking-widest" style={{ ...MONO, color: '#333' }}>VERIFICANDO ACESSO…</p>
+      </div>
+    )
   }
 
-  if (!sessao) {
-    return <LoginForm onLogin={() => window.location.reload()} />
-  }
+  if (!sessao) return <LoginForm onLogin={() => window.location.reload()} />
 
   if (ehZelador === false) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
-        <Shield className="w-12 h-12 mb-4 text-gray-300" />
-        <h2 className="text-xl font-bold text-gray-700 mb-2">Acesso restrito</h2>
-        <p className="text-gray-500 text-sm max-w-sm">
-          {sessao.email} não está na lista de Zeladores. Entre em contato com o administrador.
-        </p>
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4" style={{ backgroundColor: '#0a0a0a' }}>
+        <span className="text-4xl mb-4" style={{ color: '#333' }}>+</span>
+        <p className="text-[10px] tracking-widest mb-3" style={{ ...MONO, color: '#555' }}>ACESSO NEGADO</p>
+        <p className="text-sm mb-6" style={{ color: '#555' }}>{sessao.email}</p>
         <button
           onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-          className="mt-6 text-sm text-gray-400 hover:text-gray-600"
+          className="text-[11px] tracking-widest" style={{ ...MONO, color: '#444' }}
         >
-          Sair
+          SAIR
         </button>
       </div>
     )
@@ -231,48 +237,93 @@ export default function Admin() {
 
   return (
     <>
-      <Helmet><title>Zeladores — evangeliza.me</title></Helmet>
+      <Helmet><title>Admin — evangeliza.me</title></Helmet>
 
       <div className="max-w-3xl mx-auto px-4 py-10">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Shield className="w-6 h-6" style={{ color: '#1E3A5F' }} />
-              Painel dos Zeladores
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {sessao.email} · {pendentes.length} aguardando revisão
-            </p>
+        {/* Header */}
+        <div className="mb-8">
+          <p className="text-[10px] tracking-widest mb-3" style={{ ...MONO, color: '#555' }}>PAINEL · /ADMIN</p>
+          <div className="flex items-start justify-between flex-wrap gap-3">
+            <h1 className="text-4xl font-bold text-white">Moderação</h1>
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] tracking-widest" style={{ ...MONO, color: '#555' }}>
+                LOGADO COMO · {sessao.email.toUpperCase()}
+              </span>
+              <button
+                onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
+                className="text-[10px] tracking-widest transition-colors hover:text-white"
+                style={{ ...MONO, color: '#333' }}
+              >
+                SAIR
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-            className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            Sair
-          </button>
         </div>
 
-        {isLoading && (
-          <div className="text-center py-10 text-gray-400">Carregando...</div>
-        )}
-
-        {!isLoading && pendentes.length === 0 && (
-          <div className="text-center py-20">
-            <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-400" />
-            <p className="text-gray-600 font-medium">Tudo em dia! Nenhum testemunho aguardando revisão.</p>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          {pendentes.map(t => (
-            <CartaoTestemunho
-              key={t.id}
-              t={t}
-              onAprovar={() => moderar.mutate({ id: t.id, status: 'aprovado' })}
-              onRejeitar={(motivo) => moderar.mutate({ id: t.id, status: 'rejeitado', motivo })}
-            />
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 border mb-8" style={{ borderColor: '#2a2a2a' }}>
+          {[
+            { label: 'FILA', value: aba === 'pendentes' ? String(itens.length) : '—' },
+            { label: 'APROVADOS HOJE', value: '—' },
+            { label: 'REJEITADOS HOJE', value: '—' },
+            { label: 'TEMPO MÉDIO', value: '—' },
+          ].map(({ label, value }) => (
+            <div
+              key={label}
+              className="p-4 border-r border-b sm:border-b-0 last:border-r-0"
+              style={{ borderColor: '#2a2a2a' }}
+            >
+              <p className="text-[10px] mb-2 tracking-widest" style={{ ...MONO, color: '#444' }}>{label}</p>
+              <p className="text-3xl sm:text-4xl font-bold text-white">{value}</p>
+            </div>
           ))}
         </div>
+
+        {/* Tabs */}
+        <div className="flex border-b mb-6" style={{ borderColor: '#2a2a2a' }}>
+          {(['pendentes', 'aprovados', 'denunciados'] as Aba[]).map(a => (
+            <button
+              key={a}
+              onClick={() => setAba(a)}
+              className="px-4 py-3 text-[11px] tracking-widest border-b-2 transition-colors"
+              style={{
+                ...MONO,
+                color: aba === a ? '#fff' : '#444',
+                borderBottomColor: aba === a ? '#e8b84b' : 'transparent',
+              }}
+            >
+              {a.toUpperCase()}
+              {a === 'pendentes' && aba === 'pendentes' && itens.length > 0 && (
+                <span className="ml-2" style={{ color: '#e8b84b' }}>· {itens.length}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        {isLoading && (
+          <div className="py-10 text-center">
+            <p className="text-[11px] tracking-widest" style={{ ...MONO, color: '#333' }}>CARREGANDO…</p>
+          </div>
+        )}
+
+        {!isLoading && itens.length === 0 && (
+          <div className="py-20 text-center">
+            <span className="text-4xl" style={{ color: '#e8b84b' }}>+</span>
+            <p className="mt-4 text-[11px] tracking-widest" style={{ ...MONO, color: '#555' }}>
+              NENHUM REGISTRO · TUDO EM DIA
+            </p>
+          </div>
+        )}
+
+        {itens.map(t => (
+          <ItemTestemunho
+            key={t.id}
+            t={t}
+            onAprovar={() => moderar.mutate({ id: t.id, status: 'aprovado' })}
+            onRejeitar={(m) => moderar.mutate({ id: t.id, status: 'rejeitado', motivo: m })}
+          />
+        ))}
       </div>
     </>
   )

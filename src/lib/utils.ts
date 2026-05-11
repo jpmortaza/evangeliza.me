@@ -40,3 +40,9 @@ export function truncar(text: string, max: number): string {
   if (text.length <= max) return text
   return text.slice(0, max).trimEnd() + '…'
 }
+
+export function getDisplayId(criado_em: string, id: string): string {
+  const year = new Date(criado_em).getFullYear()
+  const num = parseInt(id.replace(/-/g, '').slice(-8), 16) % 10000
+  return `T-${year}-${String(num).padStart(4, '0')}`
+}

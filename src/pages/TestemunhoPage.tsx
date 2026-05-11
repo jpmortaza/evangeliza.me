@@ -2,12 +2,13 @@ import { useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Helmet } from 'react-helmet-async'
-import { ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { type Testemunho, CATEGORIAS } from '@/types'
-import { formatarData } from '@/lib/utils'
+import { formatarDataRelativa, getDisplayId } from '@/lib/utils'
 import YouTubeEmbed from '@/components/testemunhos/YouTubeEmbed'
 import BotoesCompartilhar from '@/components/compartilhamento/BotoesCompartilhar'
+
+const MONO: React.CSSProperties = { fontFamily: '"Geist Mono", monospace' }
 
 async function buscarTestemunho(id: string): Promise<Testemunho> {
   const { data, error } = await supabase
@@ -16,7 +17,6 @@ async function buscarTestemunho(id: string): Promise<Testemunho> {
     .eq('id', id)
     .eq('status', 'aprovado')
     .single()
-
   if (error) throw error
   return data as Testemunho
 }
@@ -39,10 +39,11 @@ export default function TestemunhoPage() {
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 animate-pulse">
-        <div className="h-8 bg-gray-100 rounded w-3/4 mb-4" />
-        <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-4 bg-gray-100 rounded" />
+        <div className="h-2 rounded mb-6 w-32" style={{ backgroundColor: '#1e1e1e' }} />
+        <div className="h-8 rounded mb-4 w-3/4" style={{ backgroundColor: '#1e1e1e' }} />
+        <div className="space-y-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-3 rounded" style={{ backgroundColor: '#1e1e1e' }} />
           ))}
         </div>
       </div>
@@ -52,17 +53,27 @@ export default function TestemunhoPage() {
   if (error || !t) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <p className="text-gray-500 mb-6">Testemunho não encontrado.</p>
-        <Link to="/" className="text-sm font-medium" style={{ color: '#1E3A5F' }}>
-          ← Voltar ao feed
+        <span className="text-4xl" style={{ color: '#333' }}>+</span>
+        <p className="mt-4 text-[11px] tracking-widest mb-6" style={{ ...MONO, color: '#555' }}>
+          REGISTRO NÃO ENCONTRADO
+        </p>
+        <Link
+          to="/"
+          className="text-[10px] tracking-widest transition-colors hover:text-white"
+          style={{ ...MONO, color: '#444' }}
+        >
+          ← VOLTAR AO FEED
         </Link>
       </div>
     )
   }
 
-  const autor = t.eh_anonimo ? 'Anônimo' : (t.usuarios?.nome ?? t.nome_anonimo ?? 'Anônimo')
+  const autor = t.eh_anonimo ? 'ANÔNIMO' : (t.usuarios?.nome ?? t.nome_anonimo ?? 'ANÔNIMO').toUpperCase()
   const midia = t.midias?.[0]
   const url = `${window.location.origin}/testemunho/${t.id}`
+  const displayId = getDisplayId(t.criado_em, t.id)
+  const catLabel = t.categoria ? CATEGORIAS[t.categoria].toUpperCase() : null
+  const tempo = formatarDataRelativa(t.criado_em).toUpperCase()
 
   return (
     <>
@@ -75,40 +86,43 @@ export default function TestemunhoPage() {
         {midia?.tipo === 'imagem' && <meta property="og:image" content={midia.url} />}
       </Helmet>
 
-      <div className="max-w-2xl mx-auto px-4 py-12">
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        {/* Back */}
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-8 transition-colors"
+          className="inline-block text-[10px] tracking-widest mb-8 transition-colors hover:text-white"
+          style={{ ...MONO, color: '#444' }}
         >
-          <ArrowLeft className="w-4 h-4" />
-          Todos os testemunhos
+          ← FEED
         </Link>
 
-        {t.categoria && (
-          <span
-            className="inline-block text-xs font-semibold px-3 py-1 rounded-full mb-4 text-white"
-            style={{ backgroundColor: '#1E3A5F' }}
-          >
-            {CATEGORIAS[t.categoria]}
-          </span>
-        )}
+        {/* Meta */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <span className="text-[11px]" style={{ ...MONO, color: '#e8b84b' }}>{displayId}</span>
+          {catLabel && (
+            <>
+              <span style={{ color: '#333' }}>·</span>
+              <span className="text-[10px] px-1.5 py-px border" style={{ ...MONO, color: '#888', borderColor: '#2a2a2a' }}>
+                {catLabel}
+              </span>
+            </>
+          )}
+          <span style={{ color: '#333' }}>·</span>
+          <span className="text-[10px]" style={{ ...MONO, color: '#444' }}>{tempo}</span>
+        </div>
 
-        <h1
-          className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 leading-tight"
-          style={{ fontFamily: "'Lora', serif" }}
-        >
-          {t.titulo}
-        </h1>
+        {/* Title */}
+        <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-4">{t.titulo}</h1>
 
-        <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100">
-          <span className="text-sm text-gray-500">
-            <strong className="text-gray-700">{autor}</strong> · {formatarData(t.criado_em)}
-          </span>
+        {/* Author + share */}
+        <div className="flex items-center justify-between gap-3 mb-8 pb-6 border-b" style={{ borderColor: '#2a2a2a' }}>
+          <span className="text-[10px]" style={{ ...MONO, color: '#444' }}>{autor}</span>
           <BotoesCompartilhar titulo={t.titulo} conteudo={t.conteudo} url={url} />
         </div>
 
+        {/* Media */}
         {midia?.tipo === 'youtube' && (
-          <div className="mb-8 rounded-xl overflow-hidden">
+          <div className="mb-8">
             <YouTubeEmbed videoId={midia.url} title={t.titulo} />
           </div>
         )}
@@ -116,41 +130,43 @@ export default function TestemunhoPage() {
           <img
             src={midia.url}
             alt={t.titulo}
-            className="w-full rounded-xl mb-8 max-h-96 object-cover"
+            className="w-full mb-8 max-h-96 object-cover"
           />
         )}
 
-        <div className="prose prose-gray max-w-none">
+        {/* Content */}
+        <div className="space-y-4">
           {t.conteudo.split('\n').map((paragrafo, i) =>
             paragrafo.trim() ? (
-              <p key={i} className="text-gray-700 leading-relaxed mb-4 text-lg">
+              <p key={i} className="text-base leading-relaxed" style={{ color: '#aaa' }}>
                 {paragrafo}
               </p>
             ) : null
           )}
         </div>
 
-        <div className="mt-12 pt-8 border-t border-gray-100 text-center">
-          <p className="text-gray-500 mb-4 text-sm">Este testemunho te tocou?</p>
+        {/* Bottom share */}
+        <div className="mt-12 pt-8 border-t text-center space-y-3" style={{ borderColor: '#2a2a2a' }}>
+          <p className="text-[10px] tracking-widest" style={{ ...MONO, color: '#444' }}>
+            ESTE TESTEMUNHO TE TOCOU?
+          </p>
           <BotoesCompartilhar titulo={t.titulo} conteudo={t.conteudo} url={url} />
         </div>
 
-        <div
-          className="mt-10 rounded-2xl p-8 text-white text-center"
-          style={{ backgroundColor: '#1E3A5F' }}
-        >
-          <p className="text-lg font-medium mb-2" style={{ fontFamily: "'Lora', serif" }}>
-            Você também tem uma história assim?
+        {/* CTA */}
+        <div className="mt-10 border p-8 text-center" style={{ borderColor: '#2a2a2a' }}>
+          <p className="text-[10px] tracking-widest mb-3" style={{ ...MONO, color: '#555' }}>
+            VOCÊ TAMBÉM TEM UMA HISTÓRIA ASSIM?
           </p>
-          <p className="text-white/75 text-sm mb-5">
+          <p className="text-sm mb-6" style={{ color: '#888' }}>
             Compartilhe como Deus agiu na sua vida. Pode ser anônimo.
           </p>
           <Link
             to="/compartilhar"
-            className="inline-block font-semibold px-6 py-3 rounded-xl text-white transition-colors"
-            style={{ backgroundColor: '#C9933B' }}
+            className="inline-block text-sm font-bold px-6 py-3 tracking-widest transition-opacity hover:opacity-80"
+            style={{ ...MONO, backgroundColor: '#e8b84b', color: '#0a0a0a' }}
           >
-            Compartilhar meu testemunho
+            + COMPARTILHAR
           </Link>
         </div>
       </div>

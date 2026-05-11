@@ -1,31 +1,75 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #1E3A5F;
-  --color-primary-light: #2a5080;
-  --color-accent: #C9933B;
-  --color-accent-light: #e0aa50;
-  --color-muted: #6b7280;
-  --color-surface: #f9fafb;
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-serif: "Lora", Georgia, serif;
+  --color-canvas: #0a0a0a;
+  --color-surface: #141414;
+  --color-elevated: #1e1e1e;
+  --color-gold: #e8b84b;
+  --color-gold-dim: #a07c28;
+  --color-line: #2a2a2a;
+  --color-muted: #888888;
+  --color-dim: #444444;
+  --color-faint: #2a2a2a;
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Courier New", monospace;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
+
+html { background: #0a0a0a; }
 
 body {
-  font-family: var(--font-sans);
-  background-color: #f9fafb;
-  color: #111827;
+  font-family: "Geist", system-ui, sans-serif;
+  background-color: #0a0a0a;
+  color: #ffffff;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.font-serif {
-  font-family: var(--font-serif);
+::selection {
+  background: #e8b84b;
+  color: #0a0a0a;
 }
 
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; }
+
+/* Input reset */
+input, textarea, select {
+  background: transparent;
+  color: #fff;
+  font-family: "Geist", system-ui, sans-serif;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #444;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #e8b84b !important;
+}
+
+/* Mono label utility */
+.label {
+  font-family: "Geist Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #555;
+}
+
+.label-gold {
+  font-family: "Geist Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e8b84b;
+}
+
+/* Line clamp */
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -39,3 +83,18 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Animate pulse override for dark theme */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* Dot blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.dot-live { animation: blink 2s ease-in-out infinite; }
