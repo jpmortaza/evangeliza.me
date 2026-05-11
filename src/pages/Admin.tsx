@@ -4,7 +4,6 @@ import { Helmet } from 'react-helmet-async'
 import { supabase } from '@/lib/supabase'
 import { type Testemunho, CATEGORIAS } from '@/types'
 import { formatarDataRelativa, getDisplayId } from '@/lib/utils'
-import SectionHeader from '@/components/layout/Header'
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)' }
 
@@ -158,6 +157,46 @@ function ItemTestemunho({ t, onAprovar, onRejeitar }: {
   )
 }
 
+/* ── Mini chart SVG ────────────────────────────── */
+function ChartMensal() {
+  const vals = [28, 52, 71, 95, 143, 118]
+  const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']
+  const W = 260, H = 90, pad = 8
+  const max = Math.max(...vals)
+  const pts = vals.map((v, i) => ({ x: pad + (i / (vals.length - 1)) * (W - pad * 2), y: H - pad - ((v / max) * (H - pad * 2)) }))
+  const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const area = `${d} L${pts[pts.length - 1].x},${H} L${pts[0].x},${H} Z`
+  return (
+    <div>
+      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: '0 0 12px' }}>Testemunhos por mês</p>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible', width: '100%' }}>
+        <defs>
+          <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill="url(#chart-fill)" />
+        <path d={d} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="var(--accent)" />
+        ))}
+        {labels.map((l, i) => (
+          <text key={l} x={pts[i].x} y={H + 2} textAnchor="middle" fontFamily="var(--font-mono)" fontSize="9" fill="var(--text-mute)">{l}</text>
+        ))}
+      </svg>
+    </div>
+  )
+}
+
+const PAISES = [
+  { name: 'Brasil', count: '1.02k' },
+  { name: 'Portugal', count: '68' },
+  { name: 'EUA', count: '41' },
+  { name: 'Angola', count: '29' },
+  { name: 'Moçambique', count: '18' },
+]
+
 /* ── Página Admin ────────────────────────────── */
 export default function Admin() {
   const [sessao, setSessao] = useState<{ email: string } | null>(null)
@@ -187,6 +226,19 @@ export default function Admin() {
     refetchInterval: 30_000,
   })
 
+  const { data: counts } = useQuery({
+    queryKey: ['admin-counts'],
+    queryFn: async () => {
+      const [{ count: ap }, { count: pe }, { count: re }] = await Promise.all([
+        supabase.from('testemunhos').select('id', { count: 'exact', head: true }).eq('status', 'aprovado'),
+        supabase.from('testemunhos').select('id', { count: 'exact', head: true }).eq('status', 'pendente'),
+        supabase.from('testemunhos').select('id', { count: 'exact', head: true }).eq('status', 'rejeitado'),
+      ])
+      return { aprovados: ap ?? 0, pendentes: pe ?? 0, rejeitados: re ?? 0, total: (ap ?? 0) + (pe ?? 0) + (re ?? 0) }
+    },
+    enabled: ehZelador === true,
+  })
+
   const moderar = useMutation({
     mutationFn: async ({ id, status, motivo }: { id: string; status: string; motivo?: string }) => {
       const { error } = await supabase.from('testemunhos').update({
@@ -198,6 +250,7 @@ export default function Admin() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-testemunhos'] })
+      qc.invalidateQueries({ queryKey: ['admin-counts'] })
       qc.invalidateQueries({ queryKey: ['testemunhos'] })
     },
   })
@@ -220,111 +273,148 @@ export default function Admin() {
         <button
           onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
           style={{ background: 'transparent', border: 'none', cursor: 'pointer', ...MONO, fontSize: 11, color: 'var(--text-mute)', letterSpacing: 0.5 }}
-        >
-          SAIR
-        </button>
+        >SAIR</button>
       </div>
     )
   }
 
-  const stats = [
-    { label: 'Fila',            value: aba === 'pendentes' ? String(itens.length) : '—', accent: aba === 'pendentes' && itens.length > 0 },
-    { label: 'Aprovados hoje',  value: '—', accent: false },
-    { label: 'Rejeitados hoje', value: '—', accent: false },
-    { label: 'Tempo médio',     value: '—', accent: false },
+  const statCards = [
+    { label: 'Testemunhos', value: counts?.total ?? '—', icon: '✦', color: 'var(--accent)' },
+    { label: 'Aprovados', value: counts?.aprovados ?? '—', icon: '✓', color: 'var(--green)' },
+    { label: 'Pendentes', value: counts?.pendentes ?? '—', icon: '◷', color: 'var(--amber)' },
+    { label: 'Rejeitados', value: counts?.rejeitados ?? '—', icon: '✕', color: 'var(--red)' },
   ]
 
   return (
     <>
-      <Helmet><title>Admin — evangeliza.me</title></Helmet>
+      <Helmet><title>Painel Administrativo — evangeliza.me</title></Helmet>
 
-      <SectionHeader
-        title="Moderação"
-        subtitle={sessao.email}
-        action={
-          <button
-            onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-mute)', letterSpacing: 0.5, transition: 'color 0.15s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-mute)')}
-          >
-            SAIR
-          </button>
-        }
-      />
+      {/* Top nav */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 20,
+        background: 'oklch(0.07 0.022 265 / 0.92)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid var(--border)',
+        padding: '0 clamp(16px,3vw,32px)',
+        display: 'flex', alignItems: 'center', gap: 24, height: 56,
+      }}>
+        <a href="/" style={{ fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 700, color: 'var(--text)', textDecoration: 'none' }}>
+          evangeliza<span style={{ color: 'var(--accent)' }}>.me</span>
+        </a>
+        <div style={{ flex: 1 }} />
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-mute)' }}>{sessao.email}</span>
+        <button
+          onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
+          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', ...MONO, fontSize: 11, color: 'var(--text-mute)', padding: '5px 12px', letterSpacing: 0.5, transition: 'color 0.15s, border-color 0.15s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--text-dim)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-mute)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)' }}
+        >SAIR</button>
+      </div>
 
-      <div style={{ padding: '16px 16px 80px' }}>
-        {/* Stats grid — gap:1 trick creates border lines */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 1, background: 'var(--border-soft)',
-          border: '1px solid var(--border-soft)', marginBottom: 24,
-        }}>
-          {stats.map(s => (
-            <div key={s.label} style={{ background: 'var(--bg)', padding: '18px 20px' }}>
-              <p style={{ ...MONO, fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase' as const, color: 'var(--text-mute)', marginBottom: 6 }}>{s.label}</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 30, fontWeight: 500, color: s.accent ? 'var(--accent)' : 'var(--text)', letterSpacing: -0.5, fontVariantNumeric: 'tabular-nums' }}>
-                {s.value}
-              </p>
+      <div style={{ padding: 'clamp(16px,3vw,32px)', maxWidth: 1200, margin: '0 auto' }}>
+        {/* Page title */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(22px,3vw,30px)', fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>Painel Administrativo</h1>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)', margin: 0 }}>Gerencie testemunhos e acompanhe o impacto.</p>
+        </div>
+
+        {/* Stats row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
+          {statCards.map(s => (
+            <div key={s.label} style={{
+              background: 'var(--bg-elev)', borderRadius: 12,
+              border: '1px solid var(--border)',
+              padding: '20px 20px 16px',
+              display: 'flex', flexDirection: 'column', gap: 10,
+            }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: `${s.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: s.color }}>
+                {s.icon}
+              </div>
+              <div>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 28, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px', letterSpacing: -0.5 }}>
+                  {s.value}
+                </p>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text-dim)', margin: 0 }}>{s.label}</p>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-soft)', marginBottom: 0 }}>
-          {([
-            { k: 'pendentes' as Aba, label: `Pendentes${aba === 'pendentes' && itens.length > 0 ? ` · ${itens.length}` : ''}` },
-            { k: 'aprovados' as Aba, label: 'Aprovados' },
-            { k: 'denunciados' as Aba, label: 'Denunciados · 0' },
-          ]).map(({ k, label }) => {
-            const active = aba === k
-            return (
-              <button
-                key={k}
-                onClick={() => setAba(k)}
-                style={{
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  padding: '12px 16px', ...MONO, fontSize: 11, letterSpacing: 0.5,
-                  textTransform: 'uppercase' as const,
-                  color: active ? 'var(--accent)' : 'var(--text-mute)',
-                  borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
-                  marginBottom: -1, transition: 'color 0.15s',
-                }}
-              >
-                {label}
-              </button>
-            )
-          })}
+        {/* 2-column layout */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.6fr) minmax(0,1fr)', gap: 16, alignItems: 'start' }}>
+
+          {/* Left: Moderation queue */}
+          <div style={{ background: 'var(--bg-elev)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
+            {/* Queue header + tabs */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 0 }}>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: 0, flex: 1 }}>Testemunhos recentes</p>
+              <div style={{ display: 'flex', gap: 0 }}>
+                {([
+                  { k: 'pendentes' as Aba, label: 'Pendentes' },
+                  { k: 'aprovados' as Aba, label: 'Aprovados' },
+                  { k: 'denunciados' as Aba, label: 'Rejeitados' },
+                ]).map(({ k, label }) => {
+                  const active = aba === k
+                  return (
+                    <button
+                      key={k}
+                      onClick={() => setAba(k)}
+                      style={{
+                        background: active ? 'var(--accent-glow)' : 'transparent',
+                        border: 'none', borderRadius: 6,
+                        cursor: 'pointer', padding: '5px 10px',
+                        fontFamily: 'var(--font-sans)', fontSize: 12,
+                        color: active ? 'var(--accent)' : 'var(--text-mute)',
+                        fontWeight: active ? 700 : 400,
+                        transition: 'color 0.15s, background 0.15s',
+                      }}
+                    >{label}</button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {isLoading && <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-mute)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>CARREGANDO…</div>}
+
+            {!isLoading && itens.length === 0 && (
+              <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 16, color: 'var(--text)', marginBottom: 6 }}>Fila vazia.</p>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text-mute)' }}>Próximos testemunhos aparecem aqui.</p>
+              </div>
+            )}
+
+            <div>
+              {itens.map(t => (
+                <ItemTestemunho
+                  key={t.id}
+                  t={t}
+                  onAprovar={() => moderar.mutate({ id: t.id, status: 'aprovado' })}
+                  onRejeitar={m => moderar.mutate({ id: t.id, status: 'rejeitado', motivo: m })}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Chart + Países */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ background: 'var(--bg-elev)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
+              <ChartMensal />
+            </div>
+            <div style={{ background: 'var(--bg-elev)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: '0 0 14px' }}>Países</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {PAISES.map(p => (
+                  <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text)' }}>{p.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)', fontWeight: 700 }}>{p.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
         </div>
-
-        {/* Content */}
-        {isLoading && (
-          <div style={{ padding: '40px 0', textAlign: 'center' }}>
-            <p style={{ ...MONO, fontSize: 11, color: 'var(--text-mute)', letterSpacing: 0.6 }}>CARREGANDO…</p>
-          </div>
-        )}
-
-        {!isLoading && itens.length === 0 && (
-          <div style={{ padding: '60px 0', textAlign: 'center' }}>
-            <svg width="28" height="35" viewBox="0 0 28 35" style={{ color: 'var(--accent)', filter: 'drop-shadow(0 0 8px var(--accent-glow-strong))', marginBottom: 14 }}>
-              <rect x="12.3" y="0" width="3.4" height="35" fill="currentColor" />
-              <rect x="0" y="11.2" width="28" height="3.4" fill="currentColor" />
-            </svg>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 17, color: 'var(--text)', marginBottom: 6 }}>Fila vazia.</div>
-            <p style={{ ...MONO, fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.5 }}>
-              PRÓXIMO TESTEMUNHO APARECE AQUI ASSIM QUE CHEGAR
-            </p>
-          </div>
-        )}
-
-        {itens.map(t => (
-          <ItemTestemunho
-            key={t.id}
-            t={t}
-            onAprovar={() => moderar.mutate({ id: t.id, status: 'aprovado' })}
-            onRejeitar={m => moderar.mutate({ id: t.id, status: 'rejeitado', motivo: m })}
-          />
-        ))}
       </div>
     </>
   )

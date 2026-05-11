@@ -105,15 +105,12 @@ export default function TestemunhoCard({ testemunho }: Props) {
               {tempo}
             </span>
             {catLabel && (
-              <>
-                <span style={{ color: 'var(--text-mute)', fontSize: 13 }}>·</span>
-                <span style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 0.3,
-                  color: 'var(--accent)', textTransform: 'uppercase',
-                }}>
-                  {catLabel}
-                </span>
-              </>
+              <span style={{
+                fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600,
+                color: 'var(--accent)', background: 'var(--accent-glow)',
+                border: '1px solid var(--accent-dim)',
+                padding: '2px 8px', borderRadius: 9999, textTransform: 'uppercase', letterSpacing: 0.3,
+              }}>{catLabel}</span>
             )}
           </div>
 
@@ -137,8 +134,8 @@ export default function TestemunhoCard({ testemunho }: Props) {
               className={`action-btn${amentou ? ' active' : ''}`}
               onClick={handleAmem}
               style={{ color: amentou ? '#f91880' : undefined }}
-              onMouseEnter={e => { if (!amentou) (e.currentTarget as HTMLElement).style.color = '#f91880'; (e.currentTarget as HTMLElement).style.background = 'rgba(249,24,128,0.1)' }}
-              onMouseLeave={e => { if (!amentou) (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'; (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+              onMouseEnter={e => { if (!amentou) { (e.currentTarget as HTMLElement).style.color = '#f43f5e'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.1)' } }}
+              onMouseLeave={e => { if (!amentou) { (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'; (e.currentTarget as HTMLElement).style.background = 'transparent' } }}
             >
               <AmenIcon filled={amentou} />
               {amens > 0 && <span style={{ fontSize: 13 }}>{amens}</span>}

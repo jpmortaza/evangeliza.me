@@ -71,7 +71,7 @@ export default function TestemunhoPage() {
         <SectionHeader title="Testemunho" />
         <div style={{ padding: '60px 16px', textAlign: 'center' }}>
           <p style={{ fontFamily: 'var(--font-sans)', fontSize: 23, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Não encontrado.</p>
-          <Link to="/" style={{ color: 'var(--accent)', fontFamily: 'var(--font-sans)', fontSize: 15 }}>← Voltar ao feed</Link>
+          <Link to="/feed" style={{ color: 'var(--accent)', fontFamily: 'var(--font-sans)', fontSize: 15 }}>← Voltar ao feed</Link>
         </div>
       </>
     )

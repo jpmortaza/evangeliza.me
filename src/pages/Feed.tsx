@@ -74,7 +74,7 @@ export default function Feed() {
       </Helmet>
 
       {/* Section header */}
-      <SectionHeader title="Feed" />
+      <SectionHeader title="Feed" subtitle="Histórias reais de fé, esperança e transformação." />
 
       {/* Compose box */}
       <Link to="/compartilhar" style={{ textDecoration: 'none', display: 'block' }}>

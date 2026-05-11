@@ -5,33 +5,38 @@
   --font-mono: "Geist Mono", "Courier New", monospace;
 }
 
-/* ── Design tokens — X/Twitter dark ───────────────────────── */
+/* ── Design tokens — evangeliza.me purple ───────────── */
 :root {
-  --bg:               #000000;
-  --bg-elev:          oklch(0.10 0.008 250);
-  --bg-hover:         oklch(0.065 0.006 250);
-  --border:           oklch(0.22 0.010 250);
-  --text:             oklch(0.965 0.005 80);
-  --text-dim:         oklch(0.62  0.010 250);
-  --text-mute:        oklch(0.44  0.010 250);
-  --accent:           oklch(0.86  0.10   85);
-  --accent-dim:       oklch(0.55  0.08   85);
-  --accent-glow:      oklch(0.86  0.10   85 / 0.12);
-  --accent-glow-strong: oklch(0.86 0.10  85 / 0.40);
-  --font-sans:        "Geist", system-ui, sans-serif;
-  --font-mono:        "Geist Mono", "Courier New", monospace;
+  --bg:               oklch(0.07 0.022 265);
+  --bg-elev:          oklch(0.11 0.020 265);
+  --bg-hover:         oklch(0.09 0.016 265);
+  --bg-card:          oklch(0.12 0.018 265);
+  --border:           oklch(0.20 0.016 265);
+  --text:             oklch(0.97 0.005 85);
+  --text-dim:         oklch(0.65 0.012 265);
+  --text-mute:        oklch(0.45 0.012 265);
 
-  /* sidebar width */
+  --accent:           oklch(0.58 0.26 292);
+  --accent-light:     oklch(0.72 0.20 292);
+  --accent-dim:       oklch(0.38 0.18 292);
+  --accent-glow:      oklch(0.58 0.26 292 / 0.15);
+  --accent-glow-strong: oklch(0.58 0.26 292 / 0.45);
+
+  --green:  oklch(0.72 0.18 155);
+  --amber:  oklch(0.78 0.18 78);
+  --red:    oklch(0.62 0.22 25);
+
   --sidebar-w: 275px;
   --feed-max:  600px;
 
-  /* aliases for legacy Admin page */
-  --bg-page:    #000000;
-  --border-soft: oklch(0.22 0.010 250);
+  --bg-page:    var(--bg);
+  --border-soft: var(--border);
+  --font-sans:  "Geist", system-ui, sans-serif;
+  --font-mono:  "Geist Mono", "Courier New", monospace;
 }
 
 * { box-sizing: border-box; }
-html, body { background: var(--bg); }
+html, body { background: var(--bg); margin: 0; }
 
 body {
   font-family: var(--font-sans);
@@ -40,49 +45,63 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-::selection { background: var(--accent); color: #000; }
+::selection { background: var(--accent); color: #fff; }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-/* Form inputs */
-input, textarea, select {
-  background: transparent;
-  color: var(--text);
-  font-family: var(--font-sans);
-}
-input::placeholder, textarea::placeholder { color: var(--text-mute); }
-input:focus, textarea:focus { outline: none; }
-
-/* Card hover — like X */
-.post-card {
-  transition: background 0.15s;
-  cursor: pointer;
-}
+/* ── Card hover ── */
+.post-card { transition: background 0.15s; cursor: pointer; }
 .post-card:hover { background: var(--bg-hover); }
 
-/* Action button */
+/* ── Action buttons (Amém / Share) ── */
 .action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 9999px;
-  font-family: var(--font-sans);
-  font-size: 13px;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: none; cursor: pointer;
+  padding: 6px 8px; border-radius: 9999px;
+  font-family: var(--font-sans); font-size: 13px;
   color: var(--text-dim);
   transition: color 0.15s, background 0.15s;
-  user-select: none;
 }
 .action-btn:hover { color: var(--accent); background: var(--accent-glow); }
-.action-btn.active { color: var(--accent); }
+.action-btn.active { color: #f43f5e; }
 
-/* Line clamp */
+/* ── Compose textarea ── */
+.compose-input {
+  width: 100%; background: transparent; border: none;
+  color: var(--text); font-family: var(--font-sans);
+  font-size: 19px; resize: none; line-height: 1.4;
+}
+.compose-input:focus { outline: none; }
+.compose-input::placeholder { color: var(--text-mute); }
+
+/* ── Live badge pulse dot ── */
+.ev-pulse-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+  display: inline-block;
+  box-shadow: 0 0 6px var(--green);
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.8); }
+}
+
+/* ── Rotating word animation ── */
+.ev-rotate-in {
+  display: inline-block;
+  animation: rotate-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes rotate-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Line clamp ── */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .line-clamp-4 {
   display: -webkit-box;
   -webkit-line-clamp: 4;
@@ -90,50 +109,9 @@ input:focus, textarea:focus { outline: none; }
   overflow: hidden;
 }
 
-/* Compose textarea */
-.compose-input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-size: 19px;
-  resize: none;
-  line-height: 1.4;
-}
-.compose-input:focus { outline: none; }
-.compose-input::placeholder { color: var(--text-mute); }
-
-/* Animations */
+/* ── Animate pulse skeleton ── */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
+  50% { opacity: 0.4; }
 }
-.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-
-@keyframes ev-blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.15; }
-}
-.dot-live { animation: ev-blink 2s ease-in-out infinite; }
-
-@keyframes ev-pulse-ring {
-  0%   { box-shadow: 0 0 0 0 var(--accent-glow-strong); }
-  70%  { box-shadow: 0 0 0 5px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-.ev-pulse-dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow-strong);
-  animation: ev-pulse-ring 2.4s ease-out infinite;
-  vertical-align: middle;
-}
-
-@keyframes ev-rotate-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.ev-rotate-in { animation: ev-rotate-in 0.35s ease forwards; }
+.animate-pulse { animation: pulse 1.8s ease-in-out infinite; }
