@@ -37,3 +37,12 @@ export interface Testemunho {
   usuarios?: { nome: string; slug: string; avatar_url: string | null } | null
   midias?: Midia[]
 }
+
+export interface Comentario {
+  id: string
+  testemunho_id: string
+  usuario_id: string
+  conteudo: string
+  criado_em: string
+  usuarios?: { nome: string; slug: string; avatar_url: string | null } | null
+}

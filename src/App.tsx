@@ -14,11 +14,12 @@ export default function App() {
   return (
     <Routes>
       {/* Landing — full screen, sem sidebar */}
-      <Route path="/" element={<Landing />} />
+      <Route path="/bem-vindo" element={<Landing />} />
 
       {/* App — com sidebar + bottom nav */}
       <Route element={<Layout />}>
-        <Route path="/feed" element={<Feed />} />
+        <Route path="/" element={<Feed />} />
+        <Route path="/feed" element={<Navigate to="/" replace />} />
         <Route path="/testemunho/:id" element={<TestemunhoPage />} />
         <Route path="/compartilhar" element={<NovoTestemunho />} />
         <Route path="/sobre" element={<Sobre />} />

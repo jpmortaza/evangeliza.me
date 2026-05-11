@@ -20,7 +20,7 @@ export default function Perfil() {
         <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)', marginBottom: 24 }}>
           Cadastro e perfil serão lançados em breve.
         </p>
-        <Link to="/feed" style={{ color: 'var(--accent)', fontFamily: 'var(--font-sans)', fontSize: 14, textDecoration: 'none' }}>
+        <Link to="/" style={{ color: 'var(--accent)', fontFamily: 'var(--font-sans)', fontSize: 14, textDecoration: 'none' }}>
           ← Voltar ao feed
         </Link>
       </div>

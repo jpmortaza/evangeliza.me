@@ -15,7 +15,7 @@ export default function Favoritos() {
         <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-dim)', marginBottom: 24 }}>
           Os testemunhos que você marcar aparecerão aqui.
         </p>
-        <Link to="/feed" style={{ color: 'var(--accent)', fontFamily: 'var(--font-sans)', fontSize: 14, textDecoration: 'none' }}>
+        <Link to="/" style={{ color: 'var(--accent)', fontFamily: 'var(--font-sans)', fontSize: 14, textDecoration: 'none' }}>
           ← Voltar ao feed
         </Link>
       </div>

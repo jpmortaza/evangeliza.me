@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
+import AuthModal from '@/components/auth/AuthModal'
 
 function CrossMini() {
   return (
@@ -23,7 +26,7 @@ function SearchIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" f
 function InfoIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" /><path d="M12 8v1M12 11v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg> }
 
 const NAV = [
-  { to: '/feed', label: 'Feed', Icon: HomeIcon, end: true },
+  { to: '/', label: 'Feed', Icon: HomeIcon, end: true },
   { to: '/compartilhar', label: 'Novo Testemunho', Icon: PlusIcon, end: false },
   { to: '/pesquisar', label: 'Pesquisar', Icon: SearchIcon, end: false },
   { to: '/favoritos', label: 'Meus Favoritos', Icon: HeartIcon, end: false },
@@ -32,13 +35,26 @@ const NAV = [
 ]
 
 export default function Sidebar() {
+  const { user, signOut } = useAuth()
+  const [showAuth, setShowAuth] = useState(false)
+  const [authMode, setAuthMode] = useState<'entrar' | 'cadastrar'>('entrar')
+
+  const openAuth = (mode: 'entrar' | 'cadastrar') => {
+    setAuthMode(mode)
+    setShowAuth(true)
+  }
+
+  const displayName = user?.user_metadata?.nome ?? user?.email?.split('@')[0] ?? 'Conta'
+  const initials = displayName[0].toUpperCase()
+
   return (
-    <nav style={{
-      display: 'flex', flexDirection: 'column',
-      padding: '16px 12px',
-      height: '100%',
-      background: 'var(--bg-elev)',
-    }}>
+    <>
+      <nav style={{
+        display: 'flex', flexDirection: 'column',
+        padding: '16px 12px',
+        height: '100%',
+        background: 'var(--bg-elev)',
+      }}>
       {/* Logo */}
       <Link
         to="/"
@@ -101,6 +117,53 @@ export default function Sidebar() {
       >
         ✦ Compartilhar
       </Link>
-    </nav>
+
+      {/* Auth section */}
+      {user ? (
+        <div style={{ padding: '0 4px 16px', display: 'flex', alignItems: 'center', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #c4b5fd, #818cf8)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
+          }}>{initials}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</p>
+          </div>
+          <button
+            onClick={signOut}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: 12, fontFamily: 'var(--font-sans)', padding: '4px 6px', borderRadius: 6, flexShrink: 0 }}
+            title="Sair"
+          >Sair</button>
+        </div>
+      ) : (
+        <div style={{ padding: '0 4px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+          <button
+            onClick={() => openAuth('entrar')}
+            style={{
+              padding: '9px 0', borderRadius: 9, border: '1.5px solid var(--border)',
+              background: 'var(--bg-elev)', color: 'var(--text)',
+              fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600,
+              cursor: 'pointer', transition: 'border-color 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+          >Entrar</button>
+          <button
+            onClick={() => openAuth('cadastrar')}
+            style={{
+              padding: '9px 0', borderRadius: 9, border: 'none',
+              background: 'linear-gradient(135deg, oklch(0.65 0.22 215), var(--accent))',
+              color: '#fff',
+              fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >Criar conta</button>
+        </div>
+      )}
+      </nav>
+
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} defaultMode={authMode} />}
+    </>
   )
 }
