@@ -1,0 +1,42 @@
+# Segredos — nunca subir ao GitHub
+chaves.md
+.env
+.env.local
+.env.*.local
+
+# Dependências
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+build/
+.output/
+
+# Cache
+.cache/
+.vite/
+.turbo/
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
