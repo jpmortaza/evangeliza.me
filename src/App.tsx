@@ -9,6 +9,7 @@ import Sobre from '@/pages/Sobre'
 import Pesquisar from '@/pages/Pesquisar'
 import Favoritos from '@/pages/Favoritos'
 import Perfil from '@/pages/Perfil'
+import PerfilPublico from '@/pages/PerfilPublico'
 import { useAuth } from '@/contexts/AuthContext'
 
 function AdminRoute() {
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/pesquisar" element={<Pesquisar />} />
         <Route path="/favoritos" element={<Favoritos />} />
         <Route path="/perfil" element={<Perfil />} />
+        <Route path="/perfil/:slug" element={<PerfilPublico />} />
       </Route>
 
       {/* Admin — protegido, apenas zeladores */}

@@ -38,6 +38,20 @@ export interface Testemunho {
   midias?: Midia[]
 }
 
+export interface UsuarioPerfil {
+  id: string
+  nome: string
+  slug: string
+  bio: string | null
+  avatar_url: string | null
+  instagram: string | null
+  twitter: string | null
+  youtube: string | null
+  website: string | null
+  criado_em: string
+  atualizado_em: string
+}
+
 export interface Comentario {
   id: string
   testemunho_id: string

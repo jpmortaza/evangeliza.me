@@ -24,12 +24,14 @@ function HeartIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fi
 function ShieldIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg> }
 function SearchIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" /><path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg> }
 function InfoIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" /><path d="M12 8v1M12 11v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg> }
+function UserIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg> }
 
 const NAV_BASE = [
   { to: '/', label: 'Feed', Icon: HomeIcon, end: true },
   { to: '/compartilhar', label: 'Novo Testemunho', Icon: PlusIcon, end: false },
   { to: '/pesquisar', label: 'Pesquisar', Icon: SearchIcon, end: false },
   { to: '/favoritos', label: 'Meus Favoritos', Icon: HeartIcon, end: false },
+  { to: '/perfil', label: 'Meu Perfil', Icon: UserIcon, end: false },
   { to: '/sobre', label: 'Sobre', Icon: InfoIcon, end: false },
 ]
 
@@ -122,15 +124,17 @@ export default function Sidebar() {
       {/* Auth section */}
       {user ? (
         <div style={{ padding: '0 4px 16px', display: 'flex', alignItems: 'center', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #c4b5fd, #818cf8)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
-          }}>{initials}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <Link to="/perfil" style={{ textDecoration: 'none', flexShrink: 0 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #c4b5fd, #818cf8)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, fontWeight: 700, color: '#fff',
+            }}>{initials}</div>
+          </Link>
+          <Link to="/perfil" style={{ flex: 1, minWidth: 0, textDecoration: 'none' }}>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</p>
-          </div>
+          </Link>
           <button
             onClick={signOut}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: 12, fontFamily: 'var(--font-sans)', padding: '4px 6px', borderRadius: 6, flexShrink: 0 }}
